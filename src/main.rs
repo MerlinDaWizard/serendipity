@@ -11,18 +11,10 @@ struct Data{}
 #[poise::command(slash_command, prefix_command)] // This is a function attibute from the poise library
 async fn hello(
     ctx: Context<'_>, // <'_> means an anonomous lifetime
-    #[description = "Selected user"] #[rest] user: Option<serenity::User>, // Here description is text attached to the command arguement description
+    #[description = "Selected user"] #[rest] user: serenity::User, // Here description is text attached to the command arguement description
 ) -> Result<(), Error> { // Returns an empty tuple, meaning success (see ok below) or an error
-    match user {
-        None => {
-            ctx.say("No user mentioned").await?;
-            return Ok(());
-        },
-        Some(user) => {
-            ctx.say(format!("{} says hello to {} :D", Mention::from(ctx.author().id), Mention::from(user.id))).await?;
-            return Ok(());
-        }
-    }
+    ctx.say(format!("{} says hello to {} :D", Mention::from(ctx.author().id), Mention::from(user.id))).await?;
+    return Ok(());
 }
 
 #[poise::command(prefix_command)]
