@@ -91,6 +91,7 @@ pub async fn stats(ctx: Context<'_>) -> Result<(), Error> {
     ver_hash.remove(0); // Get rid of bracket
     let ver_num = ver_full.get(1).unwrap_or(&"Unknown");
     let host = built_info::HOST;
+    // Iterative compiles kinda break this when doings lots of commits / compiles but it should work after cargo clean
     let hash = built_info::GIT_COMMIT_HASH.unwrap_or_else(|| "Unknown");
     let sys_uptime = get_system_uptime().await;
 
