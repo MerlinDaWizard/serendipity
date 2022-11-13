@@ -78,7 +78,7 @@ pub async fn stats(ctx: Context<'_>) -> Result<(), Error> {
     let guild_num = ctx.discord().cache.guild_count();
     let shard_id = ctx.discord().shard_id;
     // This should burn in holy fire
-    let shard_latency = ctx.framework().shard_manager.lock().await.runners.lock().await.get(&ShardId(shard_id)).unwrap().latency;
+    let shard_latency = ctx.framework().shard_manager.lock().await.runners.lock().await[&ShardId(shard_id)].latency;
     let latency_msg = match shard_latency {
         Some(duration) => format!("{}ms",duration.as_millis()),
         None => "NYA".to_string(),
