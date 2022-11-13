@@ -2,7 +2,7 @@ mod commands;
 use std::{env};
 
 use dotenv::dotenv;
-use poise::serenity_prelude::{self as serenity, UserId};
+use poise::{serenity_prelude::{self as serenity,EventHandler, UserId, Ready}, async_trait, Framework, event::EventWrapper};
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -30,6 +30,9 @@ async fn main() {
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![commands::hello(), commands::stats(), register()], // We specify the commands in an 'array' (vec in rust), we then load the default values for the framework for the rest
+            listener: |ctx, event, framework, data| {
+				Box::pin(listener(ctx, event, framework, data))
+			},
             ..Default::default()
         })
         // Login with a bot token from the environment
@@ -44,4 +47,20 @@ async fn main() {
             }
         )}));
         framework.run_autosharded().await.unwrap();
+}
+
+async fn listener(
+	ctx: &serenity::Context,
+	event: &poise::Event<'_>,
+	framework: poise::FrameworkContext<'_, Data, Error>,
+    data: &Data
+) -> Result<(), Error> {
+    match event {
+        poise::Event::Ready { data_about_bot } => {
+            println!("{} is connected!",data_about_bot.user.name)
+        }
+        _ => {}
+    }
+    //println!("{:?}",event);
+    Ok(())
 }
