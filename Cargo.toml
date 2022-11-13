@@ -2,6 +2,8 @@
 name = "serendipity"
 version = "0.1.0"
 edition = "2021"
+authors = ["Merlin <Merlin#7667>", "Ekpy <Ekpy#1372>"]
+description = "A discord bot by Ekpy & Merlin"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -10,3 +12,4 @@ dotenv = "0.15.0"
 serenity = { version = "0.11", default-features = false }
 tokio = { version = "1.21.2", features = ["macros", "rt-multi-thread"] }
 poise = "0.4.1"
+uptime_lib = "0.2.2"
