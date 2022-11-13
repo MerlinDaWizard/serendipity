@@ -2,12 +2,20 @@ mod commands;
 use std::{env};
 
 use dotenv::dotenv;
-use poise::serenity_prelude::{self as serenity};
+use poise::serenity_prelude::{self as serenity, UserId};
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
+
+pub mod built_info {
+    // The file has been placed there by the build script.
+    include!(concat!(env!("OUT_DIR"), "/built.rs"));
+ }
+
 pub struct Data {
-    bot_start_time: std::time::Instant
+    bot_start_time: std::time::Instant,
+    bot_user_id: UserId,
+    version: String,
 }
 
 #[poise::command(prefix_command, hide_in_help)]
@@ -30,9 +38,10 @@ async fn main() {
         .intents(serenity::GatewayIntents::non_privileged())
         .user_data_setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(
             Data {
-                bot_start_time: std::time::Instant::now()
+                bot_start_time: std::time::Instant::now(),
+                bot_user_id: _ready.user.id,
+                version: env!("CARGO_PKG_VERSION").to_string(),
             }
         )}));
-        
-        framework.run().await.unwrap();
+        framework.run_autosharded().await.unwrap();
 }

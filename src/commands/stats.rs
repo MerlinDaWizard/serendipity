@@ -1,5 +1,7 @@
-use poise::serenity_prelude::{self as serenity};
-use crate::{Context, Error};
+
+use poise::serenity_prelude::{self as serenity, CreateEmbedFooter, EmbedFooter, Colour, ShardId};
+use ::serenity::http;
+use crate::{Context, Error, built_info};
 
 const DELIMETER: char = '・';
 struct TimeData {
@@ -15,6 +17,7 @@ const DAY: u64 = 24*60*60; // Stored as u64 just to keep arithmetic kinda simple
 const HOUR: u64 = 60*60;
 const MINUTE: u64 = 60;
 
+// Could use human time instead but ¯\_(ツ)_/¯
 impl TimeData {
     fn new(time_delta: u64) -> TimeData {
         TimeData {
@@ -67,8 +70,45 @@ async fn get_system_uptime() -> String {
 /// Returns some system stats and uptime data
 #[poise::command(slash_command)]
 pub async fn stats(ctx: Context<'_>) -> Result<(), Error> {
-    let uptime = std::time::Instant::now() - ctx.data().bot_start_time;
-    ctx.say(TimeData::new(uptime.as_secs()).format()).await?;
-    ctx.say(get_system_uptime().await).await?;
+    //ctx.cache.
+    let bot = ctx.data().bot_user_id.to_user(ctx.discord()).await.unwrap();
+    
+    let colour = Colour::new(0x2f3136); // Hide the side colour by making it the same as the background
+    let shard_num = ctx.discord().cache.shard_count();
+    let guild_num = ctx.discord().cache.guild_count();
+    let shard_id = ctx.discord().shard_id;
+    // This should burn in holy fire
+    let shard_latency = ctx.framework().shard_manager.lock().await.runners.lock().await.get(&ShardId(shard_id)).unwrap().latency;
+    let latency_msg = match shard_latency {
+        Some(duration) => format!("{}ms",duration.as_millis()),
+        None => "NYA".to_string(),
+    };
+
+    let bot_uptime = std::time::Instant::now() - ctx.data().bot_start_time;
+    let bot_uptime_formatted = TimeData::new(bot_uptime.as_secs()).format();
+    let ver_full = built_info::RUSTC_VERSION.split(' ').collect::<Vec<&str>>();
+    let mut ver_hash = ver_full[2].to_string();
+    ver_hash.remove(0); // Get rid of bracket
+    let ver_num = ver_full.get(1).unwrap_or(&"Unknown");
+    let host = built_info::HOST;
+    let hash = built_info::GIT_COMMIT_HASH.unwrap_or_else(|| "Unknown");
+    let sys_uptime = get_system_uptime().await;
+
+    //ctx.say(get_system_uptime().await).await?;
+    ctx.send(|reply| reply
+        .embed(|embed| embed
+            .title(format!("{} Information", bot.name))
+            .colour(colour)
+            .description(format!("```yml\nName: {name}#{descrim} [{id}]\nAPI: {latency_msg}\nRuntime: {bot_uptime_formatted}```", name=bot.name, descrim = bot.discriminator, id = bot.id))
+            .fields(vec![
+                ("Process stats",format!("```yml\nUptime: {bot_uptime_formatted}\nRustc: {ver_num} {ver_hash}\nRAM: TODO```"), true),
+                ("Bot stats", format!("```yml\nGuilds: {guild_num}\nShards: {shard_num}\nVer: {}```", &ctx.data().version), true),
+                ("System stats", format!("```yml\nHost: {host}\nUptime: {sys_uptime}```"), false)
+                ])
+            .footer(|f| f
+                .text(format!("Build: {}", hash))
+            )
+        )
+    ).await?;
     Ok(())
 }
