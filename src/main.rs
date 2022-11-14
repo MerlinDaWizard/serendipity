@@ -45,8 +45,9 @@ async fn main() {
                 bot_user_id: _ready.user.id,
                 version: env!("CARGO_PKG_VERSION").to_string(),
             }
-        )}));
-        framework.run_autosharded().await.unwrap();
+        )
+    }));
+    framework.run_autosharded().await.unwrap();
 }
 
 async fn listener(
