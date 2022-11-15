@@ -1,23 +1,26 @@
 mod commands;
+mod events;
+//use crate::events::listener;
 use std::{env};
 
 use dotenv::dotenv;
 use env_logger::Env;
 use poise::{serenity_prelude::{self as serenity,EventHandler, UserId, Ready}, async_trait, Framework, event::EventWrapper};
+use songbird::SerenityInit;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
-
-pub mod built_info {
-    // The file has been placed there by the build script.
-    include!(concat!(env!("OUT_DIR"), "/built.rs"));
- }
 
 pub struct Data {
     bot_start_time: std::time::Instant,
     bot_user_id: UserId,
     version: String,
 }
+
+pub mod built_info {
+    // The file has been placed there by the build script.
+    include!(concat!(env!("OUT_DIR"), "/built.rs"));
+ }
 
 #[poise::command(prefix_command, hide_in_help)]
 async fn register(ctx: Context<'_>) -> Result<(), Error> {
@@ -28,19 +31,12 @@ async fn register(ctx: Context<'_>) -> Result<(), Error> {
 #[tokio::main]
 async fn main() {
     dotenv().ok(); // Dotenv crate automatically loads environment variables specified in `.env` into the environment
-    //let env = Env::new().filter("RUST_LOG");
-    let mut builder = env_logger::Builder::new();
-    todo!();
-    builder.target(env_logger::Target::Stdout); // TODO: NOT CURRENTLY WORKING
-    //builder.filter_level(log::LevelFilter::Info);
-    builder.filter_module("main", log::LevelFilter::Info);
-    builder.init();
-    //env_logger::init();
+    env_logger::init();
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![commands::hello(), commands::stats(), register()], // We specify the commands in an 'array' (vec in rust), we then load the default values for the framework for the rest
             event_handler: |ctx, event, framework, data| {
-				Box::pin(listener(ctx, event, framework, data))
+				Box::pin(events::listener(ctx, event, framework, data))
 			},
             ..Default::default()
         })
@@ -49,8 +45,7 @@ async fn main() {
         // Use a bitwise OR to add the message context intent, due to intents stored as 53-bit integer bitfield
         .intents(serenity::GatewayIntents::non_privileged())
         .setup(move |_ctx, _ready, _framework| {
-            log::info!("Loading");
-            log::error!("Test");
+            log::info!("Creating framework");
             Box::pin(async move { Ok(
                 Data {
                     bot_start_time: std::time::Instant::now(),
@@ -60,21 +55,6 @@ async fn main() {
             )})
         });
     /////////////////////
+    log::info!("Running bot");
     framework.run_autosharded().await.unwrap();
-}
-
-async fn listener(
-	ctx: &serenity::Context,
-	event: &poise::Event<'_>,
-	framework: poise::FrameworkContext<'_, Data, Error>,
-    data: &Data
-) -> Result<(), Error> {
-    match event {
-        poise::Event::Ready { data_about_bot } => {
-            println!("{} is connected!",data_about_bot.user.name)
-        }
-        _ => {}
-    }
-    //println!("{:?}",event);
-    Ok(())
 }
