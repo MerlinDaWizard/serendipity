@@ -27,7 +27,7 @@ branch = "develop"
 git = "https://github.com/serenity-rs/serenity"
 branch = "next"
 default-features = false
-features = ["builder","cache","client","gateway","http","model","utils","rustls_backend"]
+features = ["builder","cache","client","gateway","http","model","utils","rustls_backend","standard_framework","voice"]
 
 # Including songbird alone gives you support for Opus via the DCA file format.
 [dependencies.songbird]
