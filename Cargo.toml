@@ -10,12 +10,40 @@ build = "build.rs"
 
 [dependencies]
 dotenv = "0.15.0"
-serenity = { version = "0.11", default-features = false, features = ["builder","cache","client","gateway","http","model","utils","rustls_backend"] }
+#serenity = { version = "0.11", default-features = false, features = ["builder","cache","client","gateway","http","model","utils","rustls_backend"] }
 tokio = { version = "1.21.2", features = ["macros", "rt-multi-thread"] }
-poise = "0.4.1"
+#poise = "0.4.1"
 uptime_lib = "0.2.2"
 built = { version = "0.5", features = ["chrono", "semver"] }
 sysinfo = "0.26.7"
+env_logger = "0.9"
+log = "0.4"
+
+[dependencies.poise]
+git = "https://github.com/kangalioo/poise"
+branch = "develop"
+
+[dependencies.serenity]
+git = "https://github.com/serenity-rs/serenity"
+branch = "next"
+default-features = false
+features = ["builder","cache","client","gateway","http","model","utils","rustls_backend"]
+
+# Including songbird alone gives you support for Opus via the DCA file format.
+[dependencies.songbird]
+git = "https://github.com/serenity-rs/songbird"
+branch = "next"
+#version = "0.4"
+features = ["builtin-queue"]
+
+
+[dependencies.symphonia]
+version = "0.5"
+features = ["aac", "mp3", "isomp4", "alac"] # ...as well as any extras you need!
+# **NOTE**: For now, please use this fork in pre-releases for a key fix to
+# seeking on streamed MKV/WebM files.
+git = "https://github.com/FelixMcFelix/Symphonia"
+branch = "songbird-fixes"
 
 [build-dependencies]
 built = { version = "0.5", features = ["git2", "chrono", "semver"] }

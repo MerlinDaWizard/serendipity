@@ -2,6 +2,7 @@ mod commands;
 use std::{env};
 
 use dotenv::dotenv;
+use env_logger::Env;
 use poise::{serenity_prelude::{self as serenity,EventHandler, UserId, Ready}, async_trait, Framework, event::EventWrapper};
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -27,10 +28,18 @@ async fn register(ctx: Context<'_>) -> Result<(), Error> {
 #[tokio::main]
 async fn main() {
     dotenv().ok(); // Dotenv crate automatically loads environment variables specified in `.env` into the environment
+    //let env = Env::new().filter("RUST_LOG");
+    let mut builder = env_logger::Builder::new();
+    todo!();
+    builder.target(env_logger::Target::Stdout); // TODO: NOT CURRENTLY WORKING
+    //builder.filter_level(log::LevelFilter::Info);
+    builder.filter_module("main", log::LevelFilter::Info);
+    builder.init();
+    //env_logger::init();
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![commands::hello(), commands::stats(), register()], // We specify the commands in an 'array' (vec in rust), we then load the default values for the framework for the rest
-            listener: |ctx, event, framework, data| {
+            event_handler: |ctx, event, framework, data| {
 				Box::pin(listener(ctx, event, framework, data))
 			},
             ..Default::default()
@@ -39,14 +48,18 @@ async fn main() {
         .token(env::var("DISCORD_TOKEN").expect("Fill in DISCORD_TOKEN at .env")) // .expect means we just panic (crash kinda) if its missing
         // Use a bitwise OR to add the message context intent, due to intents stored as 53-bit integer bitfield
         .intents(serenity::GatewayIntents::non_privileged())
-        .user_data_setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(
-            Data {
-                bot_start_time: std::time::Instant::now(),
-                bot_user_id: _ready.user.id,
-                version: env!("CARGO_PKG_VERSION").to_string(),
-            }
-        )
-    }));
+        .setup(move |_ctx, _ready, _framework| {
+            log::info!("Loading");
+            log::error!("Test");
+            Box::pin(async move { Ok(
+                Data {
+                    bot_start_time: std::time::Instant::now(),
+                    bot_user_id: _ready.user.id,
+                    version: env!("CARGO_PKG_VERSION").to_string(),
+                }
+            )})
+        });
+    /////////////////////
     framework.run_autosharded().await.unwrap();
 }
 
