@@ -1,22 +1,32 @@
+#![allow(stable_features)]
 mod commands;
 mod events;
 //use crate::events::listener;
-use std::{env};
+use std::{env, sync::{Arc, atomic::AtomicBool}};
+use once_cell::sync::OnceCell;
 
 use dotenv::dotenv;
 use env_logger::Env;
-use poise::{serenity_prelude::{self as serenity,EventHandler, UserId, Ready}, async_trait, Framework, event::EventWrapper};
-use songbird::SerenityInit;
+use poise::{serenity_prelude::{self as serenity, UserId, Ready, builder::*}, async_trait, Framework, event::EventWrapper};
+use ::serenity::framework;
+//use songbird::serenity;
+use songbird::serenity::SerenityInit;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
 pub struct Data {
+    songbird: Arc<songbird::Songbird>,
+
     bot_start_time: std::time::Instant,
     bot_user_id: UserId,
     version: String,
 }
 
+struct EventHandler {
+    fully_started: AtomicBool,
+    framework: Arc<OnceCell<Arc<Framework<Data,Error>>>>
+}
 pub mod built_info {
     // The file has been placed there by the build script.
     include!(concat!(env!("OUT_DIR"), "/built.rs"));
@@ -32,6 +42,11 @@ async fn register(ctx: Context<'_>) -> Result<(), Error> {
 async fn main() {
     dotenv().ok(); // Dotenv crate automatically loads environment variables specified in `.env` into the environment
     env_logger::init();
+    let songbird = songbird::Songbird::serenity();
+
+    let framework_oc = Arc::new(once_cell::sync::OnceCell::new());
+    let framework_oc_clone = framework_oc.clone();
+
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![commands::hello(), commands::stats(), register()], // We specify the commands in an 'array' (vec in rust), we then load the default values for the framework for the rest
@@ -48,12 +63,15 @@ async fn main() {
             log::info!("Creating framework");
             Box::pin(async move { Ok(
                 Data {
+                    songbird: songbird.clone(),
                     bot_start_time: std::time::Instant::now(),
                     bot_user_id: _ready.user.id,
                     version: env!("CARGO_PKG_VERSION").to_string(),
                 }
             )})
-        });
+        })
+        .client_settings(move |f| f
+            .event_handler(EventHandler {framework: framework_oc_clone, fully_started: AtomicBool::new(false)}));
     /////////////////////
     log::info!("Running bot");
     framework.run_autosharded().await.unwrap();
