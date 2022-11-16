@@ -3,12 +3,9 @@ mod commands;
 mod events;
 //use crate::events::listener;
 use std::{env, sync::{Arc, atomic::AtomicBool}};
-use once_cell::sync::OnceCell;
 
 use dotenv::dotenv;
-use env_logger::Env;
-use poise::{serenity_prelude::{self as serenity, UserId, Ready, builder::*}, async_trait, Framework, event::EventWrapper};
-use ::serenity::framework;
+use poise::{serenity_prelude::{self as serenity, UserId, Ready, builder::*, ClientBuilder}, async_trait, Framework, event::EventWrapper};
 //use songbird::serenity;
 use songbird::serenity::SerenityInit;
 
@@ -23,10 +20,6 @@ pub struct Data {
     version: String,
 }
 
-struct EventHandler {
-    fully_started: AtomicBool,
-    framework: Arc<OnceCell<Arc<Framework<Data,Error>>>>
-}
 pub mod built_info {
     // The file has been placed there by the build script.
     include!(concat!(env!("OUT_DIR"), "/built.rs"));
@@ -43,9 +36,6 @@ async fn main() {
     dotenv().ok(); // Dotenv crate automatically loads environment variables specified in `.env` into the environment
     env_logger::init();
     let songbird = songbird::Songbird::serenity();
-
-    let framework_oc = Arc::new(once_cell::sync::OnceCell::new());
-    let framework_oc_clone = framework_oc.clone();
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -71,6 +61,7 @@ async fn main() {
             )})
         })
         .client_settings(move |f| f
+            .
             .event_handler(EventHandler {framework: framework_oc_clone, fully_started: AtomicBool::new(false)}));
     /////////////////////
     log::info!("Running bot");
