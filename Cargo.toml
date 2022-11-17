@@ -18,17 +18,17 @@ built = { version = "0.5", features = ["chrono", "semver"] }
 sysinfo = "0.26.7"
 env_logger = "0.9"
 log = "0.4"
-once_cell = "1"
 
 [dependencies.poise]
 git = "https://github.com/kangalioo/poise"
-branch = "develop"
+branch = "serenity-next"
 
-[dependencies.serenity]
+[dependencies.serenity_feature_only]
 git = "https://github.com/serenity-rs/serenity"
-branch = "next"
+features = ["unstable_discord_api"]
 default-features = false
-features = ["builder","cache","client","gateway","http","model","utils","rustls_backend","standard_framework","voice"]
+package = "serenity"
+branch = "next"
 
 # Including songbird alone gives you support for Opus via the DCA file format.
 [dependencies.songbird]
@@ -48,3 +48,12 @@ branch = "songbird-fixes"
 
 [build-dependencies]
 built = { version = "0.5", features = ["git2", "chrono", "semver"] }
+
+[patch.crates-io]
+serenity = { git = "https://github.com/serenity-rs/serenity", branch = "next" }
+
+[patch."https://github.com/kangalioo/poise"]
+poise = {git = "https://github.com/GnomedDev/poise", branch = "serenity-next"}
+
+#[patch."https://github.com/serenity-rs/serenity"]
+#serenity = {git = "https://github.com/serenity-rs/serenity", rev = "aeaca7fe4d885994e96c448ee948fd712108ef68"}

@@ -5,7 +5,7 @@ mod events;
 use std::{env, sync::{Arc, atomic::AtomicBool}};
 
 use dotenv::dotenv;
-use poise::{serenity_prelude::{self as serenity, UserId, Ready, builder::*, ClientBuilder}, async_trait, Framework, event::EventWrapper};
+use poise::{serenity_prelude::{self as serenity, UserId, Ready}, async_trait, Framework, event::EventWrapper};
 //use songbird::serenity;
 use songbird::serenity::SerenityInit;
 
@@ -38,18 +38,10 @@ async fn main() {
     let songbird = songbird::Songbird::serenity();
 
     let framework = poise::Framework::builder()
-        .options(poise::FrameworkOptions {
-            commands: vec![commands::hello(), commands::stats(), register()], // We specify the commands in an 'array' (vec in rust), we then load the default values for the framework for the rest
-            event_handler: |ctx, event, framework, data| {
-				Box::pin(events::listener(ctx, event, framework, data))
-			},
-            ..Default::default()
-        })
-        // Login with a bot token from the environment
         .token(env::var("DISCORD_TOKEN").expect("Fill in DISCORD_TOKEN at .env")) // .expect means we just panic (crash kinda) if its missing
         // Use a bitwise OR to add the message context intent, due to intents stored as 53-bit integer bitfield
         .intents(serenity::GatewayIntents::non_privileged())
-        .setup(move |_ctx, _ready, _framework| {
+        .user_data_setup(move |_ctx, _ready, _framework| {
             log::info!("Creating framework");
             Box::pin(async move { Ok(
                 Data {
@@ -61,8 +53,14 @@ async fn main() {
             )})
         })
         .client_settings(move |f| f
-            .
-            .event_handler(EventHandler {framework: framework_oc_clone, fully_started: AtomicBool::new(false)}));
+            .voice_manager_arc(songbird))
+        .options(poise::FrameworkOptions {
+            commands: vec![commands::hello(), commands::stats(), register()], // We specify the commands in an 'array' (vec in rust), we then load the default values for the framework for the rest
+            listener: |ctx, event, framework, data| {
+				Box::pin(events::listener(ctx, event, framework, data))
+			},
+            ..Default::default()
+        });
     /////////////////////
     log::info!("Running bot");
     framework.run_autosharded().await.unwrap();
