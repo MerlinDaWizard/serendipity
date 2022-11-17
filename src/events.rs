@@ -3,7 +3,7 @@ use crate::{Error, Data};
 
 pub async fn listener(
 	ctx: &serenity::Context,
-	event: &poise::Event<'_>,
+	event: &poise::Event,
 	framework: poise::FrameworkContext<'_, Data, Error>,
     data: &Data
 ) -> Result<(), Error> {

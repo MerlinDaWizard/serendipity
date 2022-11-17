@@ -1,6 +1,5 @@
 
-use poise::serenity_prelude::{self as serenity, CreateEmbedFooter, EmbedFooter, Colour, ShardId};
-use ::serenity::http;
+use poise::{serenity_prelude::{self as serenity, CreateEmbedFooter, EmbedFooter, Colour, ShardId, CreateEmbed}, CreateReply};
 use crate::{Context, Error, built_info};
 
 const DELIMETER: char = '・';
@@ -94,10 +93,10 @@ pub async fn stats(ctx: Context<'_>) -> Result<(), Error> {
     // Iterative compiles kinda break this when doings lots of commits / compiles but it should work after cargo clean
     let hash = built_info::GIT_COMMIT_HASH.unwrap_or_else(|| "Unknown");
     let sys_uptime = get_system_uptime().await;
-
-    //ctx.say(get_system_uptime().await).await?;
-    ctx.send(|reply| reply
-        .embed(|embed| embed
+    
+    //ctx.say(get_system_uptime().await).await?;    
+    ctx.send(CreateReply::new()
+        .embed(CreateEmbed::new()
             .title(format!("{} Information", bot.name))
             .colour(colour)
             .description(format!("```yml\nName: {name}#{descrim} [{id}]\nAPI: {latency_msg}\nRuntime: {bot_uptime_formatted}```", name=bot.name, descrim = bot.discriminator, id = bot.id))
@@ -106,9 +105,7 @@ pub async fn stats(ctx: Context<'_>) -> Result<(), Error> {
                 ("Bot stats", format!("```yml\nGuilds: {guild_num}\nShards: {shard_num}\nVer: {}```", &ctx.data().version), true),
                 ("System stats", format!("```yml\nHost: {host}\nUptime: {sys_uptime}```"), false)
                 ])
-            .footer(|f| f
-                .text(format!("Build: {}", hash))
-            )
+            .footer(CreateEmbedFooter::new(format!("Build {}", hash)))
         )
     ).await?;
     Ok(())
