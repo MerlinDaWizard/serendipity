@@ -36,16 +36,16 @@ async fn main() {
     dotenv().ok(); // Dotenv crate automatically loads environment variables specified in `.env` into the environment
     env_logger::init();
     let songbird = songbird::Songbird::serenity();
-
+    let songbird_clone = songbird.clone();
     let framework = poise::Framework::builder()
-        .token(env::var("DISCORD_TOKEN").expect("Fill in DISCORD_TOKEN at .env")) // .expect means we just panic (crash kinda) if its missing
+        .token(env::var("DISCORD_TOKEN").expect("Fill in DISCORD_TOKEN at .env"))
         // Use a bitwise OR to add the message context intent, due to intents stored as 53-bit integer bitfield
         .intents(serenity::GatewayIntents::non_privileged())
-        .user_data_setup(move |_ctx, _ready, _framework| {
+        .setup(move |_ctx, _ready, _framework| {
             log::info!("Creating framework");
             Box::pin(async move { Ok(
                 Data {
-                    songbird: songbird.clone(),
+                    songbird: songbird_clone,
                     bot_start_time: std::time::Instant::now(),
                     bot_user_id: _ready.user.id,
                     version: env!("CARGO_PKG_VERSION").to_string(),
@@ -55,8 +55,8 @@ async fn main() {
         .client_settings(move |f| f
             .voice_manager_arc(songbird))
         .options(poise::FrameworkOptions {
-            commands: vec![commands::hello(), commands::stats(), register()], // We specify the commands in an 'array' (vec in rust), we then load the default values for the framework for the rest
-            listener: |ctx, event, framework, data| {
+            commands: vec![commands::play(), commands::hello(), commands::stats(), register()],
+            event_handler: |ctx, event, framework, data| {
 				Box::pin(events::listener(ctx, event, framework, data))
 			},
             ..Default::default()

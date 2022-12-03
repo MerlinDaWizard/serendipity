@@ -2,58 +2,24 @@
 name = "serendipity"
 version = "0.1.0"
 edition = "2021"
-authors = ["Merlin <Merlin#7667>", "Ekpy <Ekpy#1372>"]
-description = "A discord bot by Ekpy & Merlin"
+authors = ["Merlin <Merlin#7667>"]
+description = "A discord bot by Merlin"
 build = "build.rs"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 dotenv = "0.15.0"
 #serenity = { version = "0.11", default-features = false, features = ["builder","cache","client","gateway","http","model","utils","rustls_backend"] }
 tokio = { version = "1.21.2", features = ["macros", "rt-multi-thread"] }
-#poise = "0.4.1"
 uptime_lib = "0.2.2"
 built = { version = "0.5", features = ["chrono", "semver"] }
 sysinfo = "0.26.7"
-env_logger = "0.9"
+env_logger = "0.10.0"
 log = "0.4"
+serenity = {version = "0.11.5", default-features = false, features = ["builder","cache","client","gateway","http","model","utils","rustls_backend"] }
+poise = "0.5.0"
+songbird = "0.3.0"
+symphonia = "0.5.1"
 
-[dependencies.poise]
-git = "https://github.com/kangalioo/poise"
-branch = "serenity-next"
-
-[dependencies.serenity_feature_only]
-git = "https://github.com/serenity-rs/serenity"
-features = ["unstable_discord_api"]
-default-features = false
-package = "serenity"
-branch = "next"
-
-# Including songbird alone gives you support for Opus via the DCA file format.
-[dependencies.songbird]
-git = "https://github.com/serenity-rs/songbird"
-branch = "next"
-#version = "0.4"
-features = ["builtin-queue"]
-
-
-[dependencies.symphonia]
-version = "0.5"
-features = ["aac", "mp3", "isomp4", "alac"] # ...as well as any extras you need!
-# **NOTE**: For now, please use this fork in pre-releases for a key fix to
-# seeking on streamed MKV/WebM files.
-git = "https://github.com/FelixMcFelix/Symphonia"
-branch = "songbird-fixes"
 
 [build-dependencies]
 built = { version = "0.5", features = ["git2", "chrono", "semver"] }
-
-[patch.crates-io]
-serenity = { git = "https://github.com/serenity-rs/serenity", branch = "next" }
-
-[patch."https://github.com/kangalioo/poise"]
-poise = {git = "https://github.com/GnomedDev/poise", branch = "serenity-next"}
-
-#[patch."https://github.com/serenity-rs/serenity"]
-#serenity = {git = "https://github.com/serenity-rs/serenity", rev = "aeaca7fe4d885994e96c448ee948fd712108ef68"}
