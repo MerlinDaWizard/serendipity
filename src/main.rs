@@ -1,6 +1,6 @@
-#![allow(stable_features)]
 mod commands;
 mod events;
+mod helpers;
 //use crate::events::listener;
 use std::{env, sync::{Arc, atomic::AtomicBool}};
 

@@ -1,7 +1,7 @@
 
 use poise::{serenity_prelude::{self as serenity, CreateEmbedFooter, EmbedFooter, Colour, ShardId, CreateEmbed}, CreateReply};
 use crate::{Context, Error, built_info};
-
+use crate::helpers::generic_error;
 const DELIMETER: char = '・';
 struct TimeData {
     years: u16,
