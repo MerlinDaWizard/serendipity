@@ -1,6 +1,6 @@
-use poise::serenity_prelude::{self as serenity, Mention, ChannelId};
-use songbird::tracks::TrackResult;
-use crate::{Context, Error, Data};
+
+
+use crate::{Context, Error};
 use crate::helpers::*;
 
 #[poise::command(
@@ -11,13 +11,13 @@ use crate::helpers::*;
 pub async fn skip(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
-    let data = ctx.data();
+    let _data = ctx.data();
     let sb = songbird::get(ctx.serenity_context()).await.expect("No songbird initialised").clone();
 
     match sb.get(ctx.guild_id().unwrap()) {
         Some(c) => {
             let call = c.lock().await;
-            if call.queue().len() <= 0 {
+            if call.queue().len() == 0 {
                 send_information_warning(&ctx, "There is nothing to skip", true).await?;
                 return Ok(())
             }
@@ -28,5 +28,5 @@ pub async fn skip(
             generic_error(&ctx, "**There is nothing to skip**").await?;
         }
     }
-    return Ok(())
+    Ok(())
 }

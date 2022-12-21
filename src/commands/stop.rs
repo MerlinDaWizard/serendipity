@@ -1,5 +1,5 @@
-use poise::serenity_prelude::{self as serenity, Mention, ChannelId};
-use crate::{Context, Error, Data};
+
+use crate::{Context, Error};
 use crate::helpers::*;
 
 #[poise::command(
@@ -10,7 +10,7 @@ use crate::helpers::*;
 pub async fn stop(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
-    let data = ctx.data();
+    let _data = ctx.data();
     let sb = songbird::get(ctx.serenity_context()).await.expect("No songbird initialised").clone();
 
     match sb.get(ctx.guild_id().unwrap()) {
@@ -24,5 +24,5 @@ pub async fn stop(
         }
     }
     send_clear_embed(&ctx, "**:wave: | Bye Bye!**").await?;
-    return Ok(())
+    Ok(())
 }

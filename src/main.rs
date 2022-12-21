@@ -5,10 +5,10 @@ mod checks;
 mod config;
 mod time;
 //use crate::events::listener;
-use std::{env, sync::{Arc, atomic::AtomicBool}};
+use std::{env, sync::{Arc}};
 
 use dotenv::dotenv;
-use poise::{serenity_prelude::{self as serenity, UserId, Ready}, async_trait, Framework, event::EventWrapper};
+use poise::{serenity_prelude::{self as serenity, UserId}};
 //use songbird::serenity;
 use songbird::SerenityInit;
 

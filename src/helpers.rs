@@ -1,6 +1,6 @@
-use std::time::Duration;
 
-use poise::serenity_prelude::{self as serenity, Colour, UserId, ChannelId};
+
+use poise::serenity_prelude::{Colour, ChannelId};
 use crate::{Context, Error};
 
 pub const ERROR_COLOUR: Colour = Colour::from_rgb(237,66,69);

@@ -1,19 +1,19 @@
 
-use std::time::Duration;
 
-use poise::{serenity_prelude::{self as serenity, CreateEmbedFooter, EmbedFooter, Colour, ShardId, CreateEmbed}, CreateReply};
+
+use poise::{serenity_prelude::{Colour, ShardId}};
 use crate::{Context, Error, built_info};
-use crate::helpers::generic_error;
+
 use crate::time::DurationFormatter;
 
 async fn get_system_uptime() -> String {
     match uptime_lib::get() {
         Ok(uptime) => {
-           return DurationFormatter::new(uptime).format_long();
+           DurationFormatter::new(uptime).format_long()
         }
         Err(err) => {
             eprintln!("Error getting uptime: {}", err);
-            return "Err".to_string();
+            "Err".to_string()
         }
     }
 }
@@ -43,7 +43,7 @@ pub async fn stats(ctx: Context<'_>) -> Result<(), Error> {
     let ver_num = ver_full.get(1).unwrap_or(&"Unknown");
     let host = built_info::HOST;
     // Iterative compiles kinda break this when doings lots of commits / compiles but it should work after cargo clean
-    let hash = built_info::GIT_COMMIT_HASH.unwrap_or_else(|| "Unknown");
+    let hash = built_info::GIT_COMMIT_HASH.unwrap_or("Unknown");
     let sys_uptime = get_system_uptime().await;
     
     //ctx.say(get_system_uptime().await).await?;

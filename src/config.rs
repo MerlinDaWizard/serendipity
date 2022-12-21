@@ -1,1 +1,1 @@
-pub const icon_url: &str = "https://cdn.darrennathanael.com/icons/spinning_disk.gif";
+pub const ICON_URL: &str = "https://cdn.darrennathanael.com/icons/spinning_disk.gif";

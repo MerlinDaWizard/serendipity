@@ -1,5 +1,5 @@
-use poise::serenity_prelude::{self as serenity, Mention, ChannelId};
-use crate::{Context, Error, Data, MusicErrors};
+
+use crate::{Context, Error};
 use crate::helpers::*;
 use crate::helpers;
 
@@ -35,7 +35,7 @@ pub async fn same_channel(ctx: Context<'_>) -> Result<bool, Error> {
             return Ok(false);
         }
     };
-    return Ok(true);
+    Ok(true)
 }
 
 pub async fn bot_in_vc(ctx: Context<'_>) -> Result<bool, Error> {
@@ -45,18 +45,18 @@ pub async fn bot_in_vc(ctx: Context<'_>) -> Result<bool, Error> {
         Some(bot_voice) => {
             match bot_voice.channel_id {
                 Some(_) => {
-                    return Ok(true);
+                    Ok(true)
                 },
                 None => {
                     generic_error(&ctx, "The bot must be in a channel to use this command").await?;
-                    return Ok(false);
+                    Ok(false)
 
                 }
             }
         },
         None => {
             generic_error(&ctx, "The bot must be in a channel to use this command2").await?;
-            return Ok(false);
+            Ok(false)
         }
     }
 }

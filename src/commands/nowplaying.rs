@@ -1,6 +1,6 @@
-use poise::serenity_prelude::{self as serenity, Mention, ChannelId};
-use songbird::tracks::TrackResult;
-use crate::{Context, Error, Data};
+
+
+use crate::{Context, Error};
 use crate::helpers::*;
 use crate::time::DurationFormatter;
 
@@ -12,7 +12,7 @@ use crate::time::DurationFormatter;
 pub async fn nowplaying(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
-    let data = ctx.data();
+    let _data = ctx.data();
     let sb = songbird::get(ctx.serenity_context()).await.expect("No songbird initialised").clone();
 
     match sb.get(ctx.guild_id().unwrap()) {
@@ -39,7 +39,7 @@ pub async fn nowplaying(
                             e.colour(crate::helpers::INFO_EMBED_COLOUR)
                             .author(|a|
                                 a.name("Now Playing")
-                                .icon_url(crate::config::icon_url)
+                                .icon_url(crate::config::ICON_URL)
                             )
                             .field("Requested by", requestor.to_string(), true);
                             match song_length {
@@ -65,7 +65,7 @@ pub async fn nowplaying(
                                 }
                             };
 
-                            return e;
+                            e
                         }
                     )).await?;
                     println!("{:?}", meta);
@@ -80,5 +80,5 @@ pub async fn nowplaying(
             send_information_warning(&ctx, "There's nothing playing.", true).await?;
         }
     }
-    return Ok(())
+    Ok(())
 }

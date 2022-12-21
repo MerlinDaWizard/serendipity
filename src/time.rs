@@ -50,7 +50,7 @@ impl DurationFormatter {
             if after {formatted.push(DELIMETER)}
             formatted.push_str(&format!("{} Secs", self.secs))
         }
-        return formatted;
+        formatted
     }
 
     pub fn format_short(&self) -> String {
@@ -76,13 +76,10 @@ impl DurationFormatter {
         }
 
         // Remove the last space to keep things compact
-        match formatted.rfind(' ') {
-            Some(i) => {
-                formatted.remove(i);
-            }
-            None => {},
+        if let Some(i) = formatted.rfind(' ') {
+            formatted.remove(i);
         };
 
-        return formatted;
+        formatted
     }
 }
