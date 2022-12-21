@@ -1,13 +1,16 @@
 mod commands;
 mod events;
 mod helpers;
+mod checks;
+mod config;
+mod time;
 //use crate::events::listener;
 use std::{env, sync::{Arc, atomic::AtomicBool}};
 
 use dotenv::dotenv;
 use poise::{serenity_prelude::{self as serenity, UserId, Ready}, async_trait, Framework, event::EventWrapper};
 //use songbird::serenity;
-use songbird::serenity::SerenityInit;
+use songbird::SerenityInit;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -18,6 +21,21 @@ pub struct Data {
     bot_start_time: std::time::Instant,
     bot_user_id: UserId,
     version: String,
+}
+
+#[derive(Debug)]
+pub enum MusicErrors {
+    NoUserChannel,
+    NotInGuild,
+    BotNotInChannel,
+}
+
+impl std::error::Error for MusicErrors {}
+
+impl std::fmt::Display for MusicErrors {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(fmt, "{:?}", self)
+    }
 }
 
 pub mod built_info {
@@ -52,10 +70,12 @@ async fn main() {
                 }
             )})
         })
-        .client_settings(move |f| f
-            .voice_manager_arc(songbird))
+        .client_settings(move |client| client
+            .register_songbird_with(songbird)
+            //.voice_manager_arc(songbird)
+        )
         .options(poise::FrameworkOptions {
-            commands: vec![commands::play(), commands::hello(), commands::stats(), register()],
+            commands: vec![commands::play(), commands::hello(), commands::stats(), register(), commands::stop(), commands::skip(), commands::nowplaying()],
             event_handler: |ctx, event, framework, data| {
 				Box::pin(events::listener(ctx, event, framework, data))
 			},
