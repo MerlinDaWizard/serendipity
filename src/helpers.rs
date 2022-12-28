@@ -1,5 +1,3 @@
-
-
 use poise::serenity_prelude::{Colour, ChannelId};
 use crate::{Context, Error};
 
@@ -37,8 +35,17 @@ pub async fn send_clear_embed<D: std::fmt::Display>(ctx: &Context<'_>, msg: D) -
     Ok(())
 }
 
-
 /// Only should be used when already checked if its in a guild
 pub fn get_user_vc(ctx: &Context<'_>) -> Option<ChannelId> {
     ctx.guild().unwrap().voice_states.get(&ctx.author().id).and_then(|vc| vc.channel_id)
+}
+
+pub async fn send_simple_embed<D: std::fmt::Display>(ctx: &Context<'_>, colour: Colour, msg: D) -> Result<(), Error> {
+
+    ctx.send(|r|
+        r.embed(|e|
+            e.colour(colour)
+            .description(msg)
+    )).await?;
+    Ok(())
 }

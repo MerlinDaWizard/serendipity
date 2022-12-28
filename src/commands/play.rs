@@ -1,14 +1,12 @@
-
-
-
-use poise::serenity_prelude::{self as serenity, ChannelId};
+use poise::serenity_prelude::{MessageBuilder, EmbedMessageBuilding};
+use poise::serenity_prelude::{self as serenity};
 
 use songbird::input::AuxMetadata;
 use songbird::input::Compose;
 use songbird::input::YoutubeDl;
-
-
-use crate::{Context, Error, Data};
+use is_url::is_url;
+use crate::time::DurationFormatter;
+use crate::{Context, Error};
 use crate::helpers::*;
 
 
@@ -22,88 +20,95 @@ impl songbird::typemap::TypeMapKey for Requestor {
     type Value = serenity::User;
 }
 
-
-#[poise::command(slash_command, guild_only)]
+#[poise::command(
+    slash_command,
+    guild_only,
+    check = "crate::checks::bot_join_user",
+)]
 pub async fn play(
     ctx: Context<'_>,
     #[description = "Song"] song: String, // Here description is text attached to the command arguement description
 ) -> Result<(), Error> {
-    let data = ctx.data();
+    let _data = ctx.data();
     
     let guild_id = if let Some(guild) = ctx.guild_id() {guild} else {generic_error(&ctx, "You must be in a guild to use this command").await?; return Ok(());};
-    let guild = ctx.guild().unwrap();
-    let channel_id = if let Some(channel_id) = get_user_vc(&ctx) {
-        channel_id
-    } else {
-        generic_error(&ctx, "You must be in a voice channel to use this command").await?; return Ok(());
-    };
-
-    println!("Hello1!");
-    let bot_in_vc = guild.voice_states.get(&data.bot_user_id);
-    match bot_in_vc {
-        Some(vc) => {
-            if vc.channel_id.unwrap() != channel_id {
-                generic_error(&ctx, "You must be in the same voice channel as me to use this command!").await?;
-                return Ok(());
-            }
-        },
-        None => {
-            join_vc(data, guild_id, channel_id).await?;
-        }
-    }
-    //let sb = songbird::get(ctx.serenity_context()).await.expect("Cant find songbird instance from context");
-    //let sb = data.songbird.clone();
-    println!("Hello1.5!");
     let sb = songbird::get(ctx.serenity_context()).await.expect("No songbird initialised").clone();
-    println!("Hello2!");
-    // let source = match  {
-    //     Ok(s) => s,
-    //     Err(e) => {
-    //         log::error!("Playback error: {:?}", e);
-    //         generic_error(&ctx, format!("Playback error: {:?}", e)).await?;
-    //         return Ok(())
-    //     },
-    // };
-    if let Some(handler_lock) = sb.get(guild_id) {
-        let mut handler = handler_lock.lock().await;
-        //let mut src = File::new("bluesky.mp3");
-        let mut src = YoutubeDl::new_ytdl_like("yt-dlp", reqwest::Client::builder().build().unwrap(), song);
-        let meta = src.aux_metadata().await;
-        //let track = handler.play_input(src.into());
-        let track = handler.enqueue_input(src.into()).await;
 
-        let mut typemap = track.typemap().write().await;
-        typemap.insert::<Requestor>(ctx.author().clone());
-        match meta {
-            Ok(m) => {
-                typemap.insert::<AuxMetadataHolder>(m);
-                
-            },
-            Err(e) => {
-                println!("Couldnt find metadata, generating");
-                println!("{:?}",e);
-            }
+    let handler_lock = sb.get(guild_id).unwrap();
+    let mut handler = handler_lock.lock().await;
+    println!("P1");
+    let reply_handle = ctx.send(|r|
+        r.embed(|e|
+            e.colour(INFO_EMBED_COLOUR)
+            .description(":mag_right: **Searching...**")
+    )).await?;
+    println!("P2");
+    let mut src = match is_url(&song) {
+        true => YoutubeDl::new_ytdl_like("yt-dlp", reqwest::Client::new(), song),
+        false => YoutubeDl::new_ytdl_like("yt-dlp", reqwest::Client::new(), format!("ytsearch:{}",song)),
+    };
+    
+    println!("{:?}", src);
+    let meta = src.aux_metadata().await;
+    let track = handler.enqueue_input(src.into()).await;
+    let mut typemap = track.typemap().write().await;
+    typemap.insert::<Requestor>(ctx.author().clone());
+    match meta {
+        Ok(m) => {
+            // let thumbnail = m.thumbnail.clone();
+            // let title = m.title.clone();
+            // let source_url = m.source_url.clone();
+            // let requestor = ctx.author();
+            // let duration = m.duration.clone();
 
+            let thumbnail = &m.thumbnail;
+            let title = &m.title;
+            let source_url = &m.source_url;
+            let requestor = ctx.author();
+            let duration = &m.duration;
+
+            reply_handle.edit(ctx, |r|
+                r.embed(|e| {
+                    e.colour(INFO_EMBED_COLOUR)
+                    .author(|a|
+                        a.name("Added to queue")
+                        .icon_url(crate::config::ICON_URL)
+                    )
+                    .field("Added by", requestor.to_string(), true);
+                    if let Some(duration) = duration {
+                        e.field("Duration", format!("`{}`",DurationFormatter::new(duration).format_short()), true);
+                        
+                    }
+
+                    if let Some(url) = source_url {
+                        e.url(url);
+
+                    }
+
+                    if let Some(title) = title {
+                        match source_url {
+                            Some(u) => {
+                                e.description(MessageBuilder::new().push_named_link_safe(title, u).build());
+                            },
+                            None => {
+                                e.description(MessageBuilder::new().push_safe(title).build());
+                            }
+                        }
+                    }
+
+                    if let Some(url) = thumbnail {
+                        e.thumbnail(url);
+                    };
+                    
+                    return e;
+            })).await?;
+            typemap.insert::<AuxMetadataHolder>(m);
+        },
+        Err(e) => {
+            println!("Couldnt find metadata");
+            println!("{:?}",e);
         }
-        //track.typemap(AuxMetadata);
 
-        //track.play()?;
-        println!("Hello5!");
-    } else {
-        println!("Not in channel issue");
     }
-    Ok(())
+    return Ok(());
 }
-
-pub async fn join_vc(data: &Data, guild_id: poise::serenity_prelude::GuildId, channel_id: ChannelId) -> Result<(), Error> {
-    let result = data.songbird.join(guild_id, channel_id).await;
-    result.1?;
-    result.0.lock().await.deafen(true).await?;
-    Ok(())
-}
-
-// impl Into<songbird::id::ChannelId> for ChannelId {
-//     fn into(self) -> songbird::id::ChannelId {
-//         todo!()
-//     }
-// }

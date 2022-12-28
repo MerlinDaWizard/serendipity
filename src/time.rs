@@ -17,7 +17,7 @@ pub struct DurationFormatter {
 }
 
 impl DurationFormatter {
-    pub fn new(duration: Duration) -> DurationFormatter {
+    pub fn new(duration: &Duration) -> DurationFormatter {
         let time_delta_seconds = duration.as_secs();
         DurationFormatter {
             years: (time_delta_seconds / YEAR) as u16,

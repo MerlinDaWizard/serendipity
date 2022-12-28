@@ -9,6 +9,7 @@ use std::{env, sync::{Arc}};
 
 use dotenv::dotenv;
 use poise::{serenity_prelude::{self as serenity, UserId}};
+use reqwest::Client;
 //use songbird::serenity;
 use songbird::SerenityInit;
 
@@ -21,6 +22,7 @@ pub struct Data {
     bot_start_time: std::time::Instant,
     bot_user_id: UserId,
     version: String,
+    http_client: Client
 }
 
 #[derive(Debug)]
@@ -67,6 +69,7 @@ async fn main() {
                     bot_start_time: std::time::Instant::now(),
                     bot_user_id: _ready.user.id,
                     version: env!("CARGO_PKG_VERSION").to_string(),
+                    http_client: reqwest::Client::new(),
                 }
             )})
         })
@@ -75,7 +78,7 @@ async fn main() {
             //.voice_manager_arc(songbird)
         )
         .options(poise::FrameworkOptions {
-            commands: vec![commands::play(), commands::hello(), commands::stats(), register(), commands::stop(), commands::skip(), commands::nowplaying()],
+            commands: vec![commands::play(), commands::hello(), commands::stats(), register(), commands::stop(), commands::skip(), commands::nowplaying(), commands::pause(), commands::resume(), commands::teams()],
             event_handler: |ctx, event, framework, data| {
 				Box::pin(events::listener(ctx, event, framework, data))
 			},

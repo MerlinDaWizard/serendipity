@@ -44,10 +44,10 @@ pub async fn nowplaying(
                             .field("Requested by", requestor.to_string(), true);
                             match song_length {
                                 Some(l) => {
-                                    e.field("Duration", format!("`{} / {}`", DurationFormatter::new(position).format_short(), DurationFormatter::new(l).format_short()), true);
+                                    e.field("Duration", format!("`{} / {}`", DurationFormatter::new(&position).format_short(), DurationFormatter::new(&l).format_short()), true);
                                 },
                                 None => {
-                                    e.field("Position", format!("`{}`", DurationFormatter::new(position).format_short()), true);
+                                    e.field("Position", format!("`{}`", DurationFormatter::new(&position).format_short()), true);
                                 }
                             };
                             //.field("Requested by", requestor.to_string(), true)
