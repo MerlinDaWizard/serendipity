@@ -5,6 +5,7 @@ mod stop;
 mod skip;
 mod nowplaying;
 mod pause;
+mod seek;
 pub mod misc;
 
 pub use hello::hello;
@@ -15,5 +16,5 @@ pub use skip::skip;
 pub use nowplaying::nowplaying;
 pub use pause::pause;
 pub use pause::resume;
-
+pub use seek::seek;
 pub use misc::teams;

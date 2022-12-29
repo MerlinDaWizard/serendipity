@@ -78,7 +78,7 @@ async fn main() {
             //.voice_manager_arc(songbird)
         )
         .options(poise::FrameworkOptions {
-            commands: vec![commands::play(), commands::hello(), commands::stats(), register(), commands::stop(), commands::skip(), commands::nowplaying(), commands::pause(), commands::resume(), commands::teams()],
+            commands: vec![commands::play(), commands::hello(), commands::stats(), register(), commands::stop(), commands::skip(), commands::nowplaying(), commands::pause(), commands::resume(), commands::teams(), commands::seek()],
             event_handler: |ctx, event, framework, data| {
 				Box::pin(events::listener(ctx, event, framework, data))
 			},

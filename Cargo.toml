@@ -23,6 +23,7 @@ is-url = "1.0.4"
 rand = "0.8.5"
 lazy_static = "1.4.0"
 itertools = "0.10.5"
+ms-converter = "1.4.0"
 
 # [dependencies.serenity]
 # git = "https://github.com/serenity-rs/serenity?rev=ea134e2a1b947c5a56538b7faa29156e367c6d21"
