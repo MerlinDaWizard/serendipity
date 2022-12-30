@@ -55,12 +55,6 @@ pub async fn play(
     typemap.insert::<Requestor>(ctx.author().clone());
     match meta {
         Ok(m) => {
-            // let thumbnail = m.thumbnail.clone();
-            // let title = m.title.clone();
-            // let source_url = m.source_url.clone();
-            // let requestor = ctx.author();
-            // let duration = m.duration.clone();
-
             let thumbnail = &m.thumbnail;
             let title = &m.title;
             let source_url = &m.source_url;
