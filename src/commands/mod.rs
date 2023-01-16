@@ -18,3 +18,4 @@ pub use pause::pause;
 pub use pause::resume;
 pub use seek::seek;
 pub use misc::teams;
+pub use misc::pokemon_game;
