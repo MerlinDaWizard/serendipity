@@ -1,11 +1,11 @@
-use std::num::NonZeroUsize;
+
 use std::str::FromStr;
 
-use poise::serenity_prelude::{Channel, Member, UserId, UserIdParseError, GuildId, User, Colour};
-use rand::thread_rng;
+use poise::serenity_prelude::{Channel, UserId, User, Colour};
+
 use rand::seq::SliceRandom;
-use lazy_static::lazy_static;
-use regex::Regex;
+
+
 use crate::{Context, Error, helpers};
 use crate::helpers::*;
 
@@ -32,7 +32,7 @@ async fn parse_users(ctx: &Context<'_>, input: String) -> Vec<User> {
         let user_id = match UserId::from_str(individual) {
             Ok(uid) => uid,
             Err(_) => {
-                helpers::send_information_warning(ctx, format!("Could not parse {} to userID", individual), true).await;
+                helpers::send_information_warning(ctx, format!("Could not parse {} to userID", individual), true).await.unwrap();
                 continue;
             },
         };
@@ -43,7 +43,7 @@ async fn parse_users(ctx: &Context<'_>, input: String) -> Vec<User> {
                 list.push(u);
             },
             Err(_) => {
-                helpers::send_information_warning(ctx, format!("Could not find user from UserID {}", individual), true).await;
+                helpers::send_information_warning(ctx, format!("Could not find user from UserID {}", individual), true).await.unwrap();
                 continue;
             },
         }
@@ -66,7 +66,7 @@ pub async fn pokemon_game(
     #[description = "Anyone to exlude from the list"]
     exclude: Option<String>,
 ) -> Result<(), Error> {
-    let guild_id = ctx.guild_id().unwrap();
+    let _guild_id = ctx.guild_id().unwrap();
 
     let voice_channel = match default_vc(&ctx, voice_channel).await {
         Some(c) => c,
