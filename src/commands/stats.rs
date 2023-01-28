@@ -1,15 +1,11 @@
-
-
-
 use poise::{serenity_prelude::{Colour, ShardId, CreateEmbed, CreateEmbedFooter}, CreateReply};
 use crate::{Context, Error, built_info};
-
-use crate::time::DurationFormatter;
+use humantime::format_duration;
 
 async fn get_system_uptime() -> String {
     match uptime_lib::get() {
         Ok(uptime) => {
-           DurationFormatter::new(&uptime).format_long()
+            format_duration(uptime).to_string()
         }
         Err(err) => {
             eprintln!("Error getting uptime: {err}");
@@ -36,7 +32,7 @@ pub async fn stats(ctx: Context<'_>) -> Result<(), Error> {
     };
 
     let bot_uptime = std::time::Instant::now() - ctx.data().bot_start_time;
-    let bot_uptime_formatted = DurationFormatter::new(&bot_uptime).format_long();
+    let bot_uptime_formatted = format_duration(bot_uptime).to_string();
     let ver_full = built_info::RUSTC_VERSION.split(' ').collect::<Vec<&str>>();
     let mut ver_hash = ver_full[2].to_string();
     ver_hash.remove(0); // Get rid of bracket

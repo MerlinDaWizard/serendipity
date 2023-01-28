@@ -1,10 +1,8 @@
 use crate::{Context, Error};
 use crate::helpers::*;
-use crate::time::DurationFormatter;
-
-use ms_converter::ms_into_time;
+use std::time::Duration;
+use humantime::format_duration;
 use poise::serenity_prelude::MessageBuilder;
-
 
 #[poise::command(
     slash_command,
@@ -13,12 +11,13 @@ use poise::serenity_prelude::MessageBuilder;
 )]
 pub async fn seek(
     ctx: Context<'_>,
+    #[description = "Sit"] 
     duration: String,
 ) -> Result<(), Error> {
     let _data = ctx.data();
     let guild_id = ctx.guild_id().unwrap();
     let sb = songbird::get(ctx.discord()).await.expect("No songbird initialised").clone();
-    let position = match ms_into_time(duration) {
+    let position = match humantime::parse_duration(&duration) {
         Ok(d) => d,
         Err(e) => {
             ctx.send(create_information_warning(format!("Error while parsing seek position: {e}"), true).await).await?;
@@ -42,7 +41,9 @@ pub async fn seek(
     ctx.defer().await?;
     match current.seek(position).result() {
         Ok(d) => {
-            ctx.send(create_clear_embed(MessageBuilder::new().push("⏩ | Current song has been set to ").push_bold(DurationFormatter::new(&d).format_short()).build()).await).await?;
+            // Kinda weird fix to round floor it down.
+            let time_display = format_duration(d - Duration::from_millis(d.subsec_millis() as u64)).to_string();
+            ctx.send(create_clear_embed(MessageBuilder::new().push("⏩ | Current song has been set to ").push_bold(time_display).build()).await).await?;
             // match &meta.title {
             //     Some(t) => {
             //         println!("Yoo");

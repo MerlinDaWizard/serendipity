@@ -54,9 +54,9 @@ pub async fn bot_join_user(ctx: Context<'_>) -> Result<bool, Error> {
         }
     };
 
-    if bot_channel.is_some() && bot_channel.unwrap() == user_channel {
-        return Ok(true);
-    }
+    // if bot_channel.is_some() && bot_channel.unwrap() == user_channel {
+    //     return Ok(true);
+    // }
 
     let manager = songbird::get(ctx.discord()).await.expect("Songbird not initialised").clone();
     manager.join(ctx.guild_id().unwrap(), user_channel).await?;

@@ -1,11 +1,11 @@
+use std::time::Duration;
 
-
+use humantime::format_duration;
 use poise::CreateReply;
 use poise::serenity_prelude::{CreateEmbed, CreateEmbedAuthor, MessageBuilder, EmbedMessageBuilding};
 
 use crate::{Context, Error};
 use crate::helpers::*;
-use crate::time::DurationFormatter;
 
 #[poise::command(
     slash_command,
@@ -45,12 +45,14 @@ pub async fn nowplaying(
                                 .icon_url(crate::config::ICON_URL)
                             )
                             .field("Requested by", requestor.to_string(), true);
+                            // Kinda weird fix to round floor it down.
+                            let time_display = format_duration(position - Duration::from_millis(position.subsec_millis() as u64)).to_string();
                             match song_length {
                                 Some(l) => {
-                                    e = e.field("Duration", format!("`{} / {}`", DurationFormatter::new(&position).format_short(), DurationFormatter::new(&l).format_short()), true);
+                                    e = e.field("Duration", format!("`{} / {}`", time_display, format_duration(l).to_string()), true);
                                 },
                                 None => {
-                                    e = e.field("Position", format!("`{}`", DurationFormatter::new(&position).format_short()), true);
+                                    e = e.field("Position", format!("`{}`", time_display), true);
                                 }
                             };
                             //.field("Requested by", requestor.to_string(), true)

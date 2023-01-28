@@ -3,14 +3,12 @@ mod events;
 mod helpers;
 mod checks;
 mod config;
-mod time;
 //use crate::events::listener;
 use std::{env, sync::{Arc}};
 
 use dotenv::dotenv;
 use poise::{serenity_prelude::{self as serenity, UserId}, Framework, FrameworkOptions};
 use reqwest::Client;
-//use songbird::serenity;
 use songbird::SerenityInit;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;

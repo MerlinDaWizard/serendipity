@@ -1,3 +1,4 @@
+use humantime::format_duration;
 use poise::CreateReply;
 use poise::serenity_prelude::{MessageBuilder, EmbedMessageBuilding, CreateEmbed, CreateEmbedAuthor};
 use poise::serenity_prelude::{self as serenity};
@@ -6,7 +7,6 @@ use songbird::input::AuxMetadata;
 use songbird::input::Compose;
 use songbird::input::YoutubeDl;
 use is_url::is_url;
-use crate::time::DurationFormatter;
 use crate::{Context, Error};
 use crate::helpers::*;
 
@@ -36,13 +36,12 @@ pub async fn play(
 
     let handler_lock = sb.get(guild_id).unwrap();
     let mut handler = handler_lock.lock().await;
-    println!("P1");
     let reply_handle = ctx.send(CreateReply::new()
         .embed(CreateEmbed::new()
             .colour(INFO_EMBED_COLOUR)
             .description(":mag_right: **Searching...**")
     )).await?;
-    println!("P2");
+
     let mut src = match is_url(&song) {
         true => YoutubeDl::new_ytdl_like("yt-dlp", reqwest::Client::new(), song),
         false => YoutubeDl::new_ytdl_like("yt-dlp", reqwest::Client::new(), format!("ytsearch:{song}")),
@@ -69,8 +68,7 @@ pub async fn play(
                     )
                     .field("Added by", requestor.to_string(), true);
                     if let Some(duration) = duration {
-                        e = e.field("Duration", format!("`{}`",DurationFormatter::new(duration).format_short()), true);
-                        
+                        e = e.field("Duration", format!("`{}`",format_duration(*duration).to_string()), true);
                     }
 
                     if let Some(url) = source_url {

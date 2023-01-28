@@ -24,8 +24,7 @@ is-url = "1.0.4"
 rand = "0.8.5"
 lazy_static = "1.4.0"
 itertools = "0.10.5"
-ms-converter = "1.4.0"
-
+humantime = "2.1"
 
 [dependencies.songbird]
 # path = "./dependencies/songbird-next"
