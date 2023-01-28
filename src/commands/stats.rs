@@ -1,7 +1,7 @@
 
 
 
-use poise::{serenity_prelude::{Colour, ShardId}};
+use poise::{serenity_prelude::{Colour, ShardId, CreateEmbed, CreateEmbedFooter}, CreateReply};
 use crate::{Context, Error, built_info};
 
 use crate::time::DurationFormatter;
@@ -25,9 +25,9 @@ pub async fn stats(ctx: Context<'_>) -> Result<(), Error> {
     let bot = ctx.data().bot_user_id.to_user(ctx).await.unwrap();
     
     let colour = Colour::new(0x2f3136); // Hide the side colour by making it the same as the background
-    let shard_num = ctx.serenity_context().cache.shard_count();
-    let guild_num = ctx.serenity_context().cache.guild_count();
-    let shard_id = ctx.serenity_context().shard_id;
+    let shard_num = ctx.discord().cache.shard_count();
+    let guild_num = ctx.discord().cache.guild_count();
+    let shard_id = ctx.discord().shard_id;
     // This should burn in holy fire
     let shard_latency = ctx.framework().shard_manager.lock().await.runners.lock().await[&ShardId(shard_id)].latency;
     let latency_msg = match shard_latency {
@@ -46,9 +46,10 @@ pub async fn stats(ctx: Context<'_>) -> Result<(), Error> {
     let hash = built_info::GIT_COMMIT_HASH.unwrap_or("Unknown");
     let sys_uptime = get_system_uptime().await;
     
-    //ctx.say(get_system_uptime().await).await?;
-    ctx.send(|reply| reply
-        .embed(|e| e
+    //ctx.say(get_system_uptime().await).await?.await?;
+    ctx.send(CreateReply::new()
+        .embed(
+            CreateEmbed::new()
             .title(format!("{} Information", bot.name))
             .colour(colour)
             .description(format!("```yml\nName: {name}#{descrim} [{id}]\nAPI: {latency_msg}\nRuntime: {bot_uptime_formatted}```", name=bot.name, descrim = bot.discriminator, id = bot.id))
@@ -57,8 +58,7 @@ pub async fn stats(ctx: Context<'_>) -> Result<(), Error> {
                 ("Bot stats", format!("```yml\nGuilds: {guild_num}\nShards: {shard_num}\nVer: {}```", &ctx.data().version), true),
                 ("System stats", format!("```yml\nHost: {host}\nUptime: {sys_uptime}```"), false)
                 ])
-            //.footer(|f| (format!("Build {}", hash)))
-            .footer(|f| f.text(format!("Build {}", hash)))
+            .footer(CreateEmbedFooter::new(format!("Build {}", hash)))
         )
     ).await?;
     Ok(())

@@ -1,5 +1,8 @@
 
 
+use poise::CreateReply;
+use poise::serenity_prelude::{CreateEmbed, CreateEmbedAuthor};
+
 use crate::{Context, Error};
 use crate::helpers::*;
 use crate::time::DurationFormatter;
@@ -13,7 +16,7 @@ pub async fn nowplaying(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
     let _data = ctx.data();
-    let sb = songbird::get(ctx.serenity_context()).await.expect("No songbird initialised").clone();
+    let sb = songbird::get(ctx.discord()).await.expect("No songbird initialised").clone();
 
     match sb.get(ctx.guild_id().unwrap()) {
         Some(c) => {
@@ -34,50 +37,50 @@ pub async fn nowplaying(
                     //     a.icon_url(icon_url)
                     // };
                     // if let Some(sour)
-                    ctx.send(|r|
-                        r.embed(|e| {
-                            e.colour(crate::helpers::INFO_EMBED_COLOUR)
-                            .author(|a|
-                                a.name("Now Playing")
+                    ctx.send(CreateReply::new()
+                        .embed(|| -> CreateEmbed {
+                            let mut e = CreateEmbed::new();
+                            e = e.colour(crate::helpers::INFO_EMBED_COLOUR)
+                            .author(CreateEmbedAuthor::new("Now Playing")
                                 .icon_url(crate::config::ICON_URL)
                             )
                             .field("Requested by", requestor.to_string(), true);
                             match song_length {
                                 Some(l) => {
-                                    e.field("Duration", format!("`{} / {}`", DurationFormatter::new(&position).format_short(), DurationFormatter::new(&l).format_short()), true);
+                                    e = e.field("Duration", format!("`{} / {}`", DurationFormatter::new(&position).format_short(), DurationFormatter::new(&l).format_short()), true);
                                 },
                                 None => {
-                                    e.field("Position", format!("`{}`", DurationFormatter::new(&position).format_short()), true);
+                                    e = e.field("Position", format!("`{}`", DurationFormatter::new(&position).format_short()), true);
                                 }
                             };
                             //.field("Requested by", requestor.to_string(), true)
 
                             if let Some(url) = video_icon_url {
-                                e.thumbnail(url);
+                                e = e.thumbnail(url);
                             };
 
                             match source_url {
                                 Some(url) => {
-                                    e.description(format!("[{title}]({url})"));
+                                    e = e.description(format!("[{title}]({url})"));
                                 },
                                 None => {
-                                    e.description(title);
+                                    e = e.description(title);
                                 }
                             };
 
                             e
-                        }
+                        }()
                     )).await?;
                     println!("{:?}", meta);
                     sh.get_info().await?;
                 },
                 None => {
-                    send_information_warning(&ctx, "There's nothing playing.", true).await?
+                    ctx.send(create_information_warning("There's nothing playing.", true).await).await?;
                 }
             }
         },
         None => {
-            send_information_warning(&ctx, "There's nothing playing.", true).await?;
+            ctx.send(create_information_warning("There's nothing playing.", true).await).await?;
         }
     }
     Ok(())

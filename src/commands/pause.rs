@@ -11,7 +11,7 @@ pub async fn pause(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
     let _data = ctx.data();
-    let sb = songbird::get(ctx.serenity_context()).await.expect("No songbird initialised").clone();
+    let sb = songbird::get(ctx.discord()).await.expect("No songbird initialised").clone();
 
     match sb.get(ctx.guild_id().unwrap()) {
         Some(c) => {
@@ -21,22 +21,22 @@ pub async fn pause(
             }
             match call.queue().current() {
                 None => {
-                    send_information_warning(&ctx, "There is nothing to pause", true).await?;
+                    ctx.send(create_information_warning("There is nothing to pause", true).await).await?;
                     return Ok(());
                 },
                 Some(s) => {
                     if s.get_info().await?.playing == Pause {
-                        send_information_warning(&ctx, "The current track is already paused", true).await?;
+                        ctx.send(create_information_warning("The current track is already paused", true).await).await?;
                         return Ok(())
                     }
 
                     call.queue().pause()?;
-                    send_clear_embed(&ctx, "**⏸ | Paused!**").await?;
+                    ctx.send(create_clear_embed("**⏸ | Paused!**").await).await?;
                 }
             }
         },
         None => {
-            send_information_warning(&ctx, "There is nothing to pause", true).await?;
+            ctx.send(create_information_warning("There is nothing to pause", true).await).await?;
         }
     }
     Ok(())
@@ -51,33 +51,33 @@ pub async fn resume(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
     let _data = ctx.data();
-    let sb = songbird::get(ctx.serenity_context()).await.expect("No songbird initialised").clone();
+    let sb = songbird::get(ctx.discord()).await.expect("No songbird initialised").clone();
 
     match sb.get(ctx.guild_id().unwrap()) {
         Some(c) => {
             let call = c.lock().await;
             if call.queue().len() == 0 {
-                send_information_warning(&ctx, "There is nothing to resume", true).await?;
+                ctx.send(create_information_warning("There is nothing to resume", true).await).await?;
                 return Ok(())
             }
             match call.queue().current() {
                 None => {
-                    send_information_warning(&ctx, "There is nothing to resume", true).await?;
+                    ctx.send(create_information_warning("There is nothing to resume", true).await).await?;
                     return Ok(());
                 },
                 Some(s) => {
                     if s.get_info().await?.playing == Play {
-                        send_information_warning(&ctx, "The current track is already playing", true).await?;
+                        ctx.send(create_information_warning("The current track is already playing", true).await).await?;
                         return Ok(())
                     }
 
                     call.queue().resume()?;
-                    send_clear_embed(&ctx, "**⏯ | Resumed!**").await?;
+                    ctx.send(create_clear_embed("**⏯ | Resumed!**").await).await?;
                 }
             }
         },
         None => {
-            send_information_warning(&ctx, "There is nothing to resume", true).await?;
+            ctx.send(create_information_warning("There is nothing to resume", true).await).await?;
         }
     }
     Ok(())

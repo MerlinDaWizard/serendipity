@@ -18,7 +18,7 @@ async fn default_vc(ctx: &Context<'_>, specified: Option<Channel>) -> Option<Cha
 
     return match helpers::get_user_vc(ctx) {
         // We pray to the unwrap gods
-        Some(c) => Some(c.to_channel(ctx.serenity_context()).await.unwrap()),
+        Some(c) => Some(c.to_channel(ctx.discord()).await.unwrap()),
         None => None,
     };
 }
@@ -30,18 +30,18 @@ async fn parse_users(ctx: &Context<'_>, input: String) -> Vec<User> {
         let user_id = match UserId::from_str(individual) {
             Ok(uid) => uid,
             Err(_) => {
-                helpers::send_information_warning(ctx, format!("Could not parse {} to userID", individual), true).await.unwrap();
+                ctx.send(create_information_warning(format!("Could not parse {} to userID", individual), true).await).await;
                 continue;
             },
         };
 
-        let user = ctx.serenity_context().http.get_user(user_id.0).await;
+        let user = ctx.discord().http.get_user(user_id).await;
         match user {
             Ok(u) => {
                 list.push(u);
             },
             Err(_) => {
-                helpers::send_information_warning(ctx, format!("Could not find user from UserID {}", individual), true).await.unwrap();
+                ctx.send(create_information_warning(format!("Could not find user from UserID {}", individual), true).await).await;
                 continue;
             },
         }
@@ -68,7 +68,7 @@ pub async fn teams(
     let voice_channel = match default_vc(&ctx, voice_channel).await {
         Some(c) => c,
         None => {
-            helpers::generic_error(&ctx, "You must either be in a voice channel or specify an override to use this command").await?;
+            ctx.send(create_generic_error("You must either be in a voice channel or specify an override to use this command").await).await?;
             return Ok(());
         }
     };
@@ -84,7 +84,7 @@ pub async fn teams(
     };
 
     let guild_vc = voice_channel.guild().unwrap();
-    let people = guild_vc.members(ctx.serenity_context()).await?;
+    let people = guild_vc.members(ctx.discord())?;
     let mut user_list: Vec<User> = Vec::new();
     for member in people {
         if member.user.bot == false {
@@ -124,6 +124,6 @@ pub async fn teams(
         }
         lines.push(line);
     }
-    send_simple_embed(&ctx, EMBED_COLOUR, itertools::join(lines, "\n")).await?;
+    ctx.send(create_simple_embed(EMBED_COLOUR, itertools::join(lines, "\n")).await).await?;
     Ok(())
 }

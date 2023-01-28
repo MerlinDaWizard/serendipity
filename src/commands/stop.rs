@@ -10,7 +10,7 @@ pub async fn stop(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
     let _data = ctx.data();
-    let sb = songbird::get(ctx.serenity_context()).await.expect("No songbird initialised").clone();
+    let sb = songbird::get(ctx.discord()).await.expect("No songbird initialised").clone();
 
     match sb.get(ctx.guild_id().unwrap()) {
         Some(c) => {
@@ -22,6 +22,6 @@ pub async fn stop(
             sb.leave(ctx.guild_id().unwrap()).await?;
         }
     }
-    send_clear_embed(&ctx, "**:wave: | Bye Bye!**").await?;
+    ctx.send(create_clear_embed("**:wave: | Bye Bye!**").await).await?;
     Ok(())
 }

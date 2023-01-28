@@ -16,11 +16,11 @@ pub async fn seek(
 ) -> Result<(), Error> {
     let _data = ctx.data();
     let guild_id = ctx.guild_id().unwrap();
-    let sb = songbird::get(ctx.serenity_context()).await.expect("No songbird initialised").clone();
+    let sb = songbird::get(ctx.discord()).await.expect("No songbird initialised").clone();
     let position = match ms_into_time(duration) {
         Ok(d) => d,
         Err(e) => {
-            send_information_warning(&ctx, format!("Error while parsing seek position: {}", e), true).await?;
+            ctx.send(create_information_warning(format!("Error while parsing seek position: {}", e), true).await).await?;
             return Ok(());
         }
     };
@@ -30,18 +30,18 @@ pub async fn seek(
     let current = match handler.queue().current() {
         Some(s) => s,
         None => {
-            send_information_warning(&ctx, "There is nothing to seek", true).await?;
+            ctx.send(create_information_warning("There is nothing to seek", true).await).await?;
             return Ok(())
         }
     };
     
     // let typemap = current.typemap().read().await;
     // let meta = typemap.get::<crate::commands::play::AuxMetadataHolder>().expect("Expected metadata");
-    println!("{:?}",current.get_info().await);
+    println!("{:?}",current.get_info().await).await?;
     println!("BEFORE");
     match current.seek(position).result_async().await {
         Ok(d) => {
-            send_clear_embed(&ctx, MessageBuilder::new().push("⏩ | Current song has been set to ").push_bold(DurationFormatter::new(&d).format_short()).build()).await?;
+            ctx.send(create_clear_embed(MessageBuilder::new().push("⏩ | Current song has been set to ").push_bold(DurationFormatter::new(&d).format_short()).build()).await).await?;
             // match &meta.title {
             //     Some(t) => {
             //         println!("Yoo");
@@ -55,7 +55,7 @@ pub async fn seek(
         },
         Err(e) => {
             dbg!(&e);
-            send_information_warning(&ctx, format!("Error while seeking: {e}"), true).await?;
+            ctx.send(create_information_warning(format!("Error while seeking: {e}"), true).await).await?;
         }
     }
     println!("AFTER");

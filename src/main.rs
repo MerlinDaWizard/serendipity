@@ -8,7 +8,7 @@ mod time;
 use std::{env, sync::{Arc}};
 
 use dotenv::dotenv;
-use poise::{serenity_prelude::{self as serenity, UserId}};
+use poise::{serenity_prelude::{self as serenity, UserId}, Framework, FrameworkOptions};
 use reqwest::Client;
 //use songbird::serenity;
 use songbird::SerenityInit;
@@ -57,11 +57,18 @@ async fn main() {
     env_logger::init();
     let songbird = songbird::Songbird::serenity();
     let songbird_clone = songbird.clone();
-    let framework = poise::Framework::builder()
-        .token(env::var("DISCORD_TOKEN").expect("Fill in DISCORD_TOKEN at .env"))
-        // Use a bitwise OR to add the message context intent, due to intents stored as 53-bit integer bitfield
-        .intents(serenity::GatewayIntents::non_privileged())
-        .setup(move |_ctx, _ready, _framework| {
+    let token = env::var("DISCORD_TOKEN").expect("Fill in DISCORD_TOKEN at .env");
+    let intents = serenity::GatewayIntents::non_privileged();
+
+    let framework = Framework::new(
+        FrameworkOptions {
+            commands: vec![commands::play(), commands::hello(), commands::stats(), register(), commands::stop(), commands::skip(), commands::nowplaying(), commands::pause(), commands::resume(), commands::teams(), commands::seek()],
+            listener: |event, framework, data| {
+                Box::pin(events::listener(event, framework, data))
+            },
+            ..Default::default()
+        },
+        move |_ctx, _ready, _framework| {
             log::info!("Creating framework");
             Box::pin(async move { Ok(
                 Data {
@@ -72,19 +79,14 @@ async fn main() {
                     http_client: reqwest::Client::new(),
                 }
             )})
-        })
-        .client_settings(move |client| client
-            .register_songbird_with(songbird)
-            //.voice_manager_arc(songbird)
-        )
-        .options(poise::FrameworkOptions {
-            commands: vec![commands::play(), commands::hello(), commands::stats(), register(), commands::stop(), commands::skip(), commands::nowplaying(), commands::pause(), commands::resume(), commands::teams(), commands::seek(), commands::pokemon_game()],
-            event_handler: |ctx, event, framework, data| {
-				Box::pin(events::listener(ctx, event, framework, data))
-			},
-            ..Default::default()
-        });
-    /////////////////////
+        }
+    );
+
+    let mut client = serenity::Client::builder(token, intents)
+        .framework(framework)
+        .await
+        .unwrap();
+
     log::info!("Running bot");
-    framework.run_autosharded().await.unwrap();
+    client.start_autosharded().await.unwrap();
 }

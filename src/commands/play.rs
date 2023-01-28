@@ -1,4 +1,5 @@
-use poise::serenity_prelude::{MessageBuilder, EmbedMessageBuilding};
+use poise::CreateReply;
+use poise::serenity_prelude::{MessageBuilder, EmbedMessageBuilding, CreateEmbed, CreateEmbedAuthor};
 use poise::serenity_prelude::{self as serenity};
 
 use songbird::input::AuxMetadata;
@@ -19,27 +20,26 @@ pub struct Requestor;
 impl songbird::typemap::TypeMapKey for Requestor {
     type Value = serenity::User;
 }
+    //check = "crate::checks::bot_join_user2",
 
 #[poise::command(
     slash_command,
     guild_only,
-    check = "crate::checks::bot_join_user",
 )]
 pub async fn play(
     ctx: Context<'_>,
     #[description = "Song"] song: String, // Here description is text attached to the command arguement description
 ) -> Result<(), Error> {
     let _data = ctx.data();
-    
-    let guild_id = if let Some(guild) = ctx.guild_id() {guild} else {generic_error(&ctx, "You must be in a guild to use this command").await?; return Ok(());};
-    let sb = songbird::get(ctx.serenity_context()).await.expect("No songbird initialised").clone();
+    let guild_id = if let Some(guild) = ctx.guild_id() {guild} else {ctx.send(create_generic_error("You must be in a guild to use this command").await).await?; return Ok(());};
+    let sb = songbird::get(ctx.discord()).await.expect("No songbird initialised").clone();
 
     let handler_lock = sb.get(guild_id).unwrap();
     let mut handler = handler_lock.lock().await;
     println!("P1");
-    let reply_handle = ctx.send(|r|
-        r.embed(|e|
-            e.colour(INFO_EMBED_COLOUR)
+    let reply_handle = ctx.send(CreateReply::new()
+        .embed(CreateEmbed::new()
+            .colour(INFO_EMBED_COLOUR)
             .description(":mag_right: **Searching...**")
     )).await?;
     println!("P2");
@@ -61,41 +61,41 @@ pub async fn play(
             let requestor = ctx.author();
             let duration = &m.duration;
 
-            reply_handle.edit(ctx, |r|
-                r.embed(|e| {
-                    e.colour(INFO_EMBED_COLOUR)
-                    .author(|a|
-                        a.name("Added to queue")
+            reply_handle.edit(ctx, CreateReply::new()
+                .embed(|| -> CreateEmbed {
+                    let mut e = CreateEmbed::new();
+                    e = e.colour(INFO_EMBED_COLOUR)
+                    .author(CreateEmbedAuthor::new("Added to queue")
                         .icon_url(crate::config::ICON_URL)
                     )
                     .field("Added by", requestor.to_string(), true);
                     if let Some(duration) = duration {
-                        e.field("Duration", format!("`{}`",DurationFormatter::new(duration).format_short()), true);
+                        e = e.field("Duration", format!("`{}`",DurationFormatter::new(duration).format_short()), true);
                         
                     }
 
                     if let Some(url) = source_url {
-                        e.url(url);
+                        e = e.url(url);
 
                     }
 
                     if let Some(title) = title {
                         match source_url {
                             Some(u) => {
-                                e.description(MessageBuilder::new().push_named_link_safe(title, u).build());
+                                e = e.description(MessageBuilder::new().push_named_link_safe(title, u).build());
                             },
                             None => {
-                                e.description(MessageBuilder::new().push_safe(title).build());
+                                e = e.description(MessageBuilder::new().push_safe(title).build());
                             }
                         }
                     }
 
                     if let Some(url) = thumbnail {
-                        e.thumbnail(url);
+                        e = e.thumbnail(url);
                     };
                     
                     return e;
-            })).await?;
+            }())).await?;
             typemap.insert::<AuxMetadataHolder>(m);
         },
         Err(e) => {

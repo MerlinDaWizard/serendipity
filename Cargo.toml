@@ -16,7 +16,8 @@ sysinfo = "0.27.1"
 env_logger = "0.10.0"
 log = "0.4"
 #poise = { git = "https://github.com/serenity-rs/poise", branch = "serenity-next"}
-poise = { path = "./dependencies/poise-0.5.2" }
+poise = { git = "https://github.com/serenity-rs/poise", branch = "serenity-next", features = ["cache"]}
+serenity = { git = "https://github.com/serenity-rs/serenity", branch = "next", default-features = false, features = ["builder","cache","client","gateway","http","model","utils","rustls_backend"]}
 reqwest = "0.11"
 regex = "1.7.0"
 is-url = "1.0.4"
@@ -32,9 +33,9 @@ ms-converter = "1.4.0"
 
 # Including songbird alone gives you support for Opus via the DCA file format.
 [dependencies.songbird]
-path = "./dependencies/songbird-next"
-#git = "https://github.com/serenity-rs/songbird"
-#branch = "next"
+# path = "./dependencies/songbird-next"
+git = "https://github.com/serenity-rs/songbird"
+branch = "next"
 features = ["builtin-queue"]
 
 # To get additional codecs, you *must* add Symphonia yourself.
@@ -48,13 +49,13 @@ git = "https://github.com/pdeljanov/Symphonia"
 [build-dependencies]
 built = { version = "0.5", features = ["git2", "chrono", "semver"] }
 
-[patch.crates-io]
-serenity = { path = "./dependencies/serenity-0.11.5"}
+#[patch.crates-io]
+#serenity = { path = "./dependencies/serenity-0.11.5"}
 #serenity = { git = "https://github.com/serenity-rs/serenity?rev=ea134e2a1b947c5a56538b7faa29156e367c6d21"}
 
 #[patch."https://github.com/serenity-rs/serenity"]
 #serenity = { git = "https://github.com/serenity-rs/serenity?rev=ea134e2a1b947c5a56538b7faa29156e367c6d21"}
 
-[patch."https://github.com/serenity-rs/serenity"]
-serenity = { path = "./dependencies/serenity-0.11.5"}
+#[patch."https://github.com/serenity-rs/serenity"]
+#serenity = { path = "./dependencies/serenity-0.11.5"}
 #serenity = "0.11.5"
