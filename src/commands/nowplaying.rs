@@ -71,7 +71,7 @@ pub async fn nowplaying(
                             e
                         }()
                     )).await?;
-                    println!("{:?}", meta);
+                    println!("{meta:?}");
                     sh.get_info().await?;
                 },
                 None => {

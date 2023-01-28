@@ -45,9 +45,9 @@ pub async fn play(
     println!("P2");
     let mut src = match is_url(&song) {
         true => YoutubeDl::new_ytdl_like("yt-dlp", reqwest::Client::new(), song),
-        false => YoutubeDl::new_ytdl_like("yt-dlp", reqwest::Client::new(), format!("ytsearch:{}",song)),
+        false => YoutubeDl::new_ytdl_like("yt-dlp", reqwest::Client::new(), format!("ytsearch:{song}")),
     };
-    println!("{:?}", src);
+    println!("{src:?}");
     let meta = src.aux_metadata().await;
     let track = handler.enqueue_input(src.into()).await;
     let mut typemap = track.typemap().write().await;
@@ -93,15 +93,15 @@ pub async fn play(
                         e = e.thumbnail(url);
                     };
                     
-                    return e;
+                    e
             }())).await?;
             typemap.insert::<AuxMetadataHolder>(m);
         },
         Err(e) => {
             println!("Couldnt find metadata");
-            println!("{:?}",e);
+            println!("{e:?}");
         }
 
     }
-    return Ok(());
+    Ok(())
 }

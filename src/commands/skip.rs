@@ -17,7 +17,7 @@ pub async fn skip(
     match sb.get(ctx.guild_id().unwrap()) {
         Some(c) => {
             let call = c.lock().await;
-            if call.queue().len() == 0 {
+            if call.queue().is_empty() {
                 ctx.send(create_information_warning("There is nothing to skip", true).await).await?;
                 return Ok(())
             }

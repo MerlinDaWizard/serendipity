@@ -36,7 +36,7 @@ impl std::error::Error for MusicErrors {}
 
 impl std::fmt::Display for MusicErrors {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(fmt, "{:?}", self)
+        write!(fmt, "{self:?}")
     }
 }
 

@@ -23,14 +23,14 @@ async fn default_vc(ctx: &Context<'_>, specified: Option<Channel>) -> Option<Cha
     };
 }
 
-async fn parse_users(ctx: &Context<'_>, input: String) -> Vec<User> {
+async fn parse_users(ctx: &Context<'_>, input: String) -> Result<Vec<User>, Error> {
     let trimmed = input.trim();
     let mut list: Vec<User> = Vec::new();
     for individual in trimmed.split(' ') {
         let user_id = match UserId::from_str(individual) {
             Ok(uid) => uid,
             Err(_) => {
-                ctx.send(create_information_warning(format!("Could not parse {} to userID", individual), true).await).await;
+                ctx.send(create_information_warning(format!("Could not parse {individual} to userID"), true).await).await?;
                 continue;
             },
         };
@@ -41,12 +41,12 @@ async fn parse_users(ctx: &Context<'_>, input: String) -> Vec<User> {
                 list.push(u);
             },
             Err(_) => {
-                ctx.send(create_information_warning(format!("Could not find user from UserID {}", individual), true).await).await;
+                ctx.send(create_information_warning(format!("Could not find user from UserID {individual}"), true).await).await?;
                 continue;
             },
         }
     }
-    return list;
+    Ok(list)
 }
 
 #[poise::command(
@@ -75,7 +75,7 @@ pub async fn teams(
 
     let exclude: Vec<User> = match exclude {
         Some(e) => {
-            let a = parse_users(&ctx, e).await;
+            let a = parse_users(&ctx, e).await?;
             a
         },
         None => {
@@ -87,10 +87,8 @@ pub async fn teams(
     let people = guild_vc.members(ctx.discord())?;
     let mut user_list: Vec<User> = Vec::new();
     for member in people {
-        if member.user.bot == false {
-            if exclude.contains(&member.user) == false {
-                user_list.push(member.user);
-            }
+        if !member.user.bot && !exclude.contains(&member.user) {
+            user_list.push(member.user);
         }
     }
 
@@ -117,7 +115,7 @@ pub async fn teams(
     for (i,t) in teams.iter().enumerate() {
         let mut line = String::new();
         line.push_str(&format!("Team {}: ", i+1));
-        if t.len() > 0 {
+        if !t.is_empty() {
             line.push_str(&itertools::join(t, ", "));
         } else {
             line.push_str("***empty***")

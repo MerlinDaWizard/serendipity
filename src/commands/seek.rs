@@ -4,7 +4,7 @@ use crate::time::DurationFormatter;
 
 use ms_converter::ms_into_time;
 use poise::serenity_prelude::MessageBuilder;
-use songbird::tracks::Action;
+
 
 #[poise::command(
     slash_command,
@@ -21,7 +21,7 @@ pub async fn seek(
     let position = match ms_into_time(duration) {
         Ok(d) => d,
         Err(e) => {
-            ctx.send(create_information_warning(format!("Error while parsing seek position: {}", e), true).await).await?;
+            ctx.send(create_information_warning(format!("Error while parsing seek position: {e}"), true).await).await?;
             return Ok(());
         }
     };

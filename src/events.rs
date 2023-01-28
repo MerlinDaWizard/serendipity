@@ -1,4 +1,4 @@
-use poise::serenity_prelude::{self as serenity};
+
 use poise::serenity_prelude::FullEvent;
 use crate::{Error, Data};
 

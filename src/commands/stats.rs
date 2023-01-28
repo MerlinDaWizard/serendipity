@@ -12,7 +12,7 @@ async fn get_system_uptime() -> String {
            DurationFormatter::new(&uptime).format_long()
         }
         Err(err) => {
-            eprintln!("Error getting uptime: {}", err);
+            eprintln!("Error getting uptime: {err}");
             "Err".to_string()
         }
     }
@@ -58,7 +58,7 @@ pub async fn stats(ctx: Context<'_>) -> Result<(), Error> {
                 ("Bot stats", format!("```yml\nGuilds: {guild_num}\nShards: {shard_num}\nVer: {}```", &ctx.data().version), true),
                 ("System stats", format!("```yml\nHost: {host}\nUptime: {sys_uptime}```"), false)
                 ])
-            .footer(CreateEmbedFooter::new(format!("Build {}", hash)))
+            .footer(CreateEmbedFooter::new(format!("Build {hash}")))
         )
     ).await?;
     Ok(())
