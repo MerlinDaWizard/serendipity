@@ -20,11 +20,11 @@ pub struct Requestor;
 impl songbird::typemap::TypeMapKey for Requestor {
     type Value = serenity::User;
 }
-    //check = "crate::checks::bot_join_user2",
 
 #[poise::command(
     slash_command,
     guild_only,
+    check = "crate::checks::bot_join_user",
 )]
 pub async fn play(
     ctx: Context<'_>,

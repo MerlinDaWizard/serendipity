@@ -37,7 +37,7 @@ pub async fn seek(
     
     // let typemap = current.typemap().read().await;
     // let meta = typemap.get::<crate::commands::play::AuxMetadataHolder>().expect("Expected metadata");
-    println!("{:?}",current.get_info().await).await?;
+    println!("{:?}",current.get_info().await?);
     println!("BEFORE");
     match current.seek(position).result_async().await {
         Ok(d) => {
