@@ -1,7 +1,7 @@
 
 
 use poise::CreateReply;
-use poise::serenity_prelude::{CreateEmbed, CreateEmbedAuthor};
+use poise::serenity_prelude::{CreateEmbed, CreateEmbedAuthor, MessageBuilder, EmbedMessageBuilding};
 
 use crate::{Context, Error};
 use crate::helpers::*;
@@ -61,10 +61,10 @@ pub async fn nowplaying(
 
                             match source_url {
                                 Some(url) => {
-                                    e = e.description(format!("[{title}]({url})"));
+                                    e = e.description(MessageBuilder::new().push_named_link_safe(title, url).build());
                                 },
                                 None => {
-                                    e = e.description(title);
+                                    e = e.description(MessageBuilder::new().push_safe(title).build());
                                 }
                             };
 

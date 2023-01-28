@@ -47,7 +47,6 @@ pub async fn play(
         true => YoutubeDl::new_ytdl_like("yt-dlp", reqwest::Client::new(), song),
         false => YoutubeDl::new_ytdl_like("yt-dlp", reqwest::Client::new(), format!("ytsearch:{}",song)),
     };
-    
     println!("{:?}", src);
     let meta = src.aux_metadata().await;
     let track = handler.enqueue_input(src.into()).await;

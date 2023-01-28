@@ -26,36 +26,16 @@ lazy_static = "1.4.0"
 itertools = "0.10.5"
 ms-converter = "1.4.0"
 
-# [dependencies.serenity]
-# git = "https://github.com/serenity-rs/serenity?rev=ea134e2a1b947c5a56538b7faa29156e367c6d21"
-# #rev = "ea134e2a1b947c5a56538b7faa29156e367c6d21"
-# features = ["builder","cache","client","gateway","http","model","utils","rustls_backend"]
 
-# Including songbird alone gives you support for Opus via the DCA file format.
 [dependencies.songbird]
 # path = "./dependencies/songbird-next"
 git = "https://github.com/serenity-rs/songbird"
 branch = "next"
 features = ["builtin-queue"]
 
-# To get additional codecs, you *must* add Symphonia yourself.
-# This includes the default formats (MKV/WebM, Ogg, Wave) and codecs (FLAC, PCM, Vorbis)...
 [dependencies.symphonia]
-# version = "0.5"
-features = ["aac", "mp3", "isomp4", "alac"] # ...as well as any extras you need!
-# **NOTE**: For now, please use this repository in pre-releases.
-git = "https://github.com/pdeljanov/Symphonia"
+version = "0.5.2"
+features = ["aac", "mp3", "isomp4", "alac", "mkv"]
 
 [build-dependencies]
 built = { version = "0.5", features = ["git2", "chrono", "semver"] }
-
-#[patch.crates-io]
-#serenity = { path = "./dependencies/serenity-0.11.5"}
-#serenity = { git = "https://github.com/serenity-rs/serenity?rev=ea134e2a1b947c5a56538b7faa29156e367c6d21"}
-
-#[patch."https://github.com/serenity-rs/serenity"]
-#serenity = { git = "https://github.com/serenity-rs/serenity?rev=ea134e2a1b947c5a56538b7faa29156e367c6d21"}
-
-#[patch."https://github.com/serenity-rs/serenity"]
-#serenity = { path = "./dependencies/serenity-0.11.5"}
-#serenity = "0.11.5"

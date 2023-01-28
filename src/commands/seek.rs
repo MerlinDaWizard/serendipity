@@ -4,6 +4,7 @@ use crate::time::DurationFormatter;
 
 use ms_converter::ms_into_time;
 use poise::serenity_prelude::MessageBuilder;
+use songbird::tracks::Action;
 
 #[poise::command(
     slash_command,
@@ -34,12 +35,12 @@ pub async fn seek(
             return Ok(())
         }
     };
-    
     // let typemap = current.typemap().read().await;
     // let meta = typemap.get::<crate::commands::play::AuxMetadataHolder>().expect("Expected metadata");
     println!("{:?}",current.get_info().await?);
     println!("BEFORE");
-    match current.seek(position).result_async().await {
+    ctx.defer().await?;
+    match current.seek(position).result() {
         Ok(d) => {
             ctx.send(create_clear_embed(MessageBuilder::new().push("⏩ | Current song has been set to ").push_bold(DurationFormatter::new(&d).format_short()).build()).await).await?;
             // match &meta.title {

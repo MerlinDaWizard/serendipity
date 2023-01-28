@@ -84,6 +84,7 @@ async fn main() {
 
     let mut client = serenity::Client::builder(token, intents)
         .framework(framework)
+        .register_songbird()
         .await
         .unwrap();
 
