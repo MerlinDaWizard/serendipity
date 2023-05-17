@@ -1,0 +1,41 @@
+[package]
+name = "parsimony"
+version = "0.1.0"
+edition = "2021"
+authors = ["Merlin <Merlin#7667>"]
+description = "A discord bot by Merlin"
+
+[dependencies]
+tokio = { version = "1.28", features = ["macros", "rt-multi-thread", "time"] }
+serde = "1.0"
+ron = "0.8"
+log = "0.4"
+pretty_env_logger = "0.4"
+reqwest = "0.11"
+oauth2 = { version = "4.3", features = ["reqwest"]}
+dashmap = "5.4"
+
+## MAIN DEPS:
+[dependencies.serenity]
+git = "https://github.com/serenity-rs/serenity"
+branch = "next"
+default-features = false
+features = ["builder","cache","client","gateway","http","model","utils","rustls_backend"]
+
+[dependencies.poise]
+git = "https://github.com/serenity-rs/poise"
+branch = "serenity-next"
+features = ["cache"]
+
+[dependencies.songbird]
+git = "https://github.com/serenity-rs/songbird"
+branch = "next"
+features = ["builtin-queue"]
+
+[dependencies.symphonia]
+version = "0.5.2"
+features = ["aac", "mp3", "isomp4", "alac", "mkv"]
+
+[features]
+default = ["spotify"]
+spotify = []

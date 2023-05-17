@@ -1,0 +1,19 @@
+(
+    // Be careful not to share your bot token!
+    bot_token: "BOT TOKEN HERE",
+    logging: "error,parsimony=info",
+    // Should the bot pause when everyone leaves the channel?
+    auto_pause: false, // TODO!, not set up in event
+    voice_settings: (
+        // When the bot should disconnect supports: Instant, Off, Timeout(TIME IN SECONDS)
+        on_idle: Instant,
+        on_lonely: Timeout(1200), // 20 mins
+    ),
+    // Just leave as default if spotify feature has been disabled
+    // https://developer.spotify.com/dashboard/
+    spotify_settings: (
+        access_token_url: "https://accounts.spotify.com/api/token",
+        client_id: "SPOTIFY CLIENT ID",
+        client_secret: "SPOTIFY CLIENT SECRET",
+    ),
+)
