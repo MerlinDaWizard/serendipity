@@ -41,30 +41,26 @@ pub async fn listener(
                         info!("Diconnected without call (Possibly due to restart)");
                     }
                 }
-            } else {
-                if let Some(sb) = songbird::get(ctx).await {
-                    if let Some(call) = sb.get(guild_id) {
-                        let call = call.lock().await;
-                        if let Some(bot_channel) = call.current_channel() {
-                            let voice_goers = get_voice_goers(ctx, bot_channel.0.into()).await;
+            } else if let Some(sb) = songbird::get(ctx).await {
+                if let Some(call) = sb.get(guild_id) {
+                    let call = call.lock().await;
+                    if let Some(bot_channel) = call.current_channel() {
+                        let voice_goers = get_voice_goers(ctx, bot_channel.0.into()).await;
 
-                            if voice_goers == 0 {
-                                lonely_disconnect(
-                                    data.config.voice_settings.on_lonely,
-                                    guild_id,
-                                    ctx,
-                                    framework.user_data().await.timeouts.clone(),
-                                    sb.clone(),
-                                )
-                                .await?;
-                            } else {
-                                if let Some(mut times) =
-                                    framework.user_data().await.timeouts.get_mut(&guild_id)
-                                {
-                                    debug!("Clearing lonely timer. [{}]", guild_id.0);
-                                    times.lonely_leavetime = None;
-                                }
-                            }
+                        if voice_goers == 0 {
+                            lonely_disconnect(
+                                data.config.voice_settings.on_lonely,
+                                guild_id,
+                                ctx,
+                                framework.user_data().await.timeouts.clone(),
+                                sb.clone(),
+                            )
+                            .await?;
+                        } else if let Some(mut times) =
+                            framework.user_data().await.timeouts.get_mut(&guild_id)
+                        {
+                            debug!("Clearing lonely timer. [{}]", guild_id.0);
+                            times.lonely_leavetime = None;
                         }
                     }
                 }
