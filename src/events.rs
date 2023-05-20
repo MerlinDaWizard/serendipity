@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use crate::{config::DisconnectOptions, Data, Error, Timeouts};
+use crate::{config::DisconnectOptions, Data, Error, GuildState, Timeouts};
 use dashmap::DashMap;
 use poise::serenity_prelude::FullEvent;
 use serenity::{
@@ -20,7 +20,7 @@ pub async fn listener(
         #[rustfmt::skip]
         FullEvent::Ready { ctx, data_about_bot } => {
             log::info!("{} is connected!", data_about_bot.user.name);
-            tokio::spawn(timeout_checker(ctx.clone(), framework.user_data().await.timeouts.clone()));
+            tokio::spawn(timeout_checker(ctx.clone(), framework.user_data().await.guild_states.clone()));
 
         }
         FullEvent::VoiceStateUpdate { ctx, old: _, new } => {
@@ -52,15 +52,15 @@ pub async fn listener(
                                 data.config.voice_settings.on_lonely,
                                 guild_id,
                                 ctx,
-                                framework.user_data().await.timeouts.clone(),
+                                framework.user_data().await.guild_states.clone(),
                                 sb.clone(),
                             )
                             .await?;
-                        } else if let Some(mut times) =
-                            framework.user_data().await.timeouts.get_mut(&guild_id)
+                        } else if let Some(mut guild_state) =
+                            framework.user_data().await.guild_states.get_mut(&guild_id)
                         {
                             debug!("Clearing lonely timer. [{}]", guild_id.0);
-                            times.lonely_leavetime = None;
+                            guild_state.timeouts.lonely_leavetime = None;
                         }
                     }
                 }
@@ -76,22 +76,28 @@ pub async fn lonely_disconnect(
     action_type: DisconnectOptions,
     guild: GuildId,
     _ctx: &poise::serenity_prelude::Context,
-    timeouts: Arc<DashMap<GuildId, Timeouts>>,
+    timeouts: Arc<DashMap<GuildId, GuildState>>,
     sb: Arc<Songbird>,
 ) -> Result<(), Error> {
     match action_type {
         DisconnectOptions::Timeout(s) => {
             debug!("Setting lonely timer. [{}]", guild.0);
             match timeouts.get_mut(&guild) {
-                Some(mut times) => {
-                    times.lonely_leavetime = Some(Instant::now() + Duration::from_secs(s as u64));
+                Some(mut guild_state) => {
+                    guild_state.timeouts.lonely_leavetime =
+                        Some(Instant::now() + Duration::from_secs(s as u64));
                 }
                 None => {
                     timeouts.insert(
                         guild,
-                        Timeouts {
-                            lonely_leavetime: Some(Instant::now() + Duration::from_secs(s as u64)),
-                            idle_leavetime: None,
+                        GuildState {
+                            timeouts: Timeouts {
+                                lonely_leavetime: Some(
+                                    Instant::now() + Duration::from_secs(s as u64),
+                                ),
+                                idle_leavetime: None,
+                            },
+                            ..Default::default()
                         },
                     );
                 }
@@ -148,7 +154,7 @@ pub async fn get_voice_goers(cache_http: impl CacheHttp, channel: ChannelId) -> 
 }
 
 // Note: I could make this create its own tasks which would further act in parallel but nah. [Todo:]
-async fn timeout_checker(ctx: SerenityContext, times: Arc<DashMap<GuildId, Timeouts>>) {
+async fn timeout_checker(ctx: SerenityContext, guild_state: Arc<DashMap<GuildId, GuildState>>) {
     let mut interval = tokio::time::interval(Duration::from_millis(500));
     interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
@@ -156,11 +162,11 @@ async fn timeout_checker(ctx: SerenityContext, times: Arc<DashMap<GuildId, Timeo
         interval.tick().await;
         trace!("Dc tick");
 
-        for mut multi_ref in times.iter_mut() {
-            let (guild, times) = multi_ref.pair_mut();
+        for mut multi_ref in guild_state.iter_mut() {
+            let (guild, guild_state) = multi_ref.pair_mut();
 
-            compare_time(&ctx, guild, &mut times.idle_leavetime).await;
-            compare_time(&ctx, guild, &mut times.lonely_leavetime).await;
+            compare_time(&ctx, guild, &mut guild_state.timeouts.idle_leavetime).await;
+            compare_time(&ctx, guild, &mut guild_state.timeouts.lonely_leavetime).await;
         }
     }
 }

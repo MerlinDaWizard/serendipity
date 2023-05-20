@@ -14,6 +14,11 @@ pretty_env_logger = "0.4"
 reqwest = "0.11"
 oauth2 = { version = "4.3", features = ["reqwest"]}
 dashmap = "5.4"
+rspotify = { version = "0.11", default-features = false, features = ["client-reqwest", "reqwest-default-tls"] }
+futures = "0.3"
+regex = "1.8"
+lazy_static = "1.4.0"
+url = "2.3.1"
 
 ## MAIN DEPS:
 [dependencies.serenity]

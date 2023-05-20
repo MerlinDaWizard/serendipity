@@ -3,18 +3,20 @@ extern crate log;
 
 pub mod commands;
 pub mod config;
+pub mod errors;
 pub mod events;
-
-use std::sync::Arc;
+pub mod helpers;
 
 use config::Config;
 use dashmap::DashMap;
 use poise::{Framework, FrameworkOptions};
+use rspotify::{ClientCredsSpotify, Credentials};
 use serenity::{
     all::{GuildId, UserId},
     prelude::GatewayIntents,
 };
 use songbird::{SerenityInit, Songbird};
+use std::sync::Arc;
 use tokio::time::Instant;
 
 use crate::config::load_config;
@@ -34,19 +36,33 @@ async fn main() {
 
     let framework = Framework::new(
         FrameworkOptions {
-            commands: vec![register(), commands::join()],
+            commands: vec![
+                register(),
+                commands::join(),
+                commands::play(),
+                commands::loops(),
+            ],
             listener: |event, framework, data| Box::pin(events::listener(event, framework, data)),
             ..Default::default()
         },
         move |_ctx, ready, _framework| {
             info!("Creating framework");
+
+            let mut spotify_client = ClientCredsSpotify::new(Credentials::new(
+                &config.spotify_settings.client_id,
+                &config.spotify_settings.client_secret,
+            ));
+            spotify_client.config.token_refreshing = true;
+
             Box::pin(async move {
+                spotify_client.request_token().await.unwrap();
                 Ok(Data {
-                    config,
                     bot_user_id: ready.user.id,
                     songbird: songbird_clone,
                     http_client: reqwest::Client::new(),
-                    timeouts: Arc::new(DashMap::new()),
+                    guild_states: Arc::new(DashMap::new()),
+                    spotify_client,
+                    config,
                 })
             })
         },
@@ -68,7 +84,8 @@ pub struct Data {
     bot_user_id: UserId,
     songbird: Arc<Songbird>,
     http_client: reqwest::Client,
-    timeouts: Arc<DashMap<GuildId, Timeouts>>,
+    guild_states: Arc<DashMap<GuildId, GuildState>>,
+    spotify_client: ClientCredsSpotify,
 }
 
 #[derive(Debug, Default)]
@@ -77,31 +94,14 @@ pub struct Timeouts {
     idle_leavetime: Option<Instant>,
 }
 
+#[derive(Debug, Default)]
+pub struct GuildState {
+    pub timeouts: Timeouts,
+    pub loop_queue: bool,
+}
+
 #[poise::command(prefix_command)]
 async fn register(ctx: Context<'_>) -> Result<(), Error> {
-    // let data = ctx.data();
-    // let spotify = &data.config.spotify_settings;
-    // let client = BasicClient::new(
-    //     ClientId::new(spotify.client_id.clone()),
-    //     Some(ClientSecret::new(spotify.client_secret.clone())),
-    //     AuthUrl::new(spotify.access_token_url.clone()).unwrap(),
-    //     // Some(TokenUrl::new(spotify.access_token_url.clone()).unwrap()),
-    //     Some(
-    //         TokenUrl::new(
-    //             "https://api.spotify.com/v1/albums/7JR7tGOAvqFSpVmDlCzHIJ/tracks".to_string(),
-    //         )
-    //         .unwrap(),
-    //     ),
-    // );
-
-    // let cred = client.exchange_client_credentials();
-    // let req = cred
-    //     .request_async(oauth2::reqwest::async_http_client)
-    //     .await
-    //     .unwrap();
-
-    // dbg!(req);
-
     poise::builtins::register_application_commands_buttons(ctx).await?;
     Ok(())
 }
