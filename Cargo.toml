@@ -10,7 +10,7 @@ tokio = { version = "1.28", features = ["macros", "rt-multi-thread", "time"] }
 serde = "1.0"
 ron = "0.8"
 log = "0.4"
-pretty_env_logger = "0.4"
+pretty_env_logger = "0.5"
 reqwest = "0.11"
 oauth2 = { version = "4.3", features = ["reqwest"]}
 dashmap = "5.4"
@@ -19,6 +19,7 @@ futures = "0.3"
 regex = "1.8"
 lazy_static = "1.4.0"
 url = "2.3.1"
+humantime = "2.1.0"
 
 ## MAIN DEPS:
 [dependencies.serenity]
@@ -44,3 +45,6 @@ features = ["aac", "mp3", "isomp4", "alac", "mkv"]
 [features]
 default = ["spotify"]
 spotify = []
+
+# [patch."https://github.com/serenity-rs/serenity/"]
+# serenity = { path = "./deps/serenity"}

@@ -11,7 +11,7 @@ use crate::{
 use dashmap::DashMap;
 use futures::{pin_mut, StreamExt, TryStreamExt};
 use lazy_static::lazy_static;
-use poise::{CreateReply, ReplyHandle};
+use poise::CreateReply;
 use regex::Regex;
 use reqwest::Client;
 use rspotify::{
@@ -47,6 +47,7 @@ impl songbird::typemap::TypeMapKey for Requestor {
 #[poise::command(slash_command, guild_only)]
 pub async fn play(ctx: Context<'_>, #[description = "Song"] song: String) -> Result<(), Error> {
     let data = ctx.data();
+    ctx.defer().await?;
     lazy_static! {
         static ref REGEX_SPOTIFY: Regex =           Regex::new(r"https://(?:open.)?spotify.com/([a-z]+)/([0-9a-zA-Z]{22})(?:\?.*)?").unwrap();
         /// Matches:
@@ -60,16 +61,6 @@ pub async fn play(ctx: Context<'_>, #[description = "Song"] song: String) -> Res
         static ref REGEX_YOUTUBE_SHORT: Regex =    Regex::new(r"(?:https?://)?(?:www.)?youtu.be/([A-Za-z0-9_-]{11,})").unwrap();
 
     }
-
-    let mut reply_handle = ctx
-        .send(
-            CreateReply::new().embed(
-                CreateEmbed::new()
-                    .colour(INFO_EMBED_COLOUR)
-                    .description(":mag_right: **Searching...**"),
-            ),
-        )
-        .await?;
 
     // TODO: Defer / Searching message.text
     // Could probs do some raw url matching before resorting to a regex capture but.. Eh.
@@ -86,7 +77,7 @@ pub async fn play(ctx: Context<'_>, #[description = "Song"] song: String) -> Res
                 let track_id = unsafe { TrackId::from_id_unchecked(spotify_id) }; // Alphanumeric already checked by regex
                 let track = spotify.track(track_id).await.unwrap();
                 let src = track_to_query(track, data.http_client.clone());
-                single_song_queue(&ctx, src, &mut reply_handle).await?;
+                single_song_queue(&ctx, src).await?;
             }
             "playlist" => {
                 let (mut ignored_tracks, mut queued_tracks) = (0u32, 0u32);
@@ -116,14 +107,6 @@ pub async fn play(ctx: Context<'_>, #[description = "Song"] song: String) -> Res
                     }
                 }
 
-                if ignored_tracks > 0 {
-                    ctx.send(create_information_warning(
-                        format!("Note: The bot does not currently support the playment of episodes. These have been ignored [{}]", ignored_tracks),
-                        true,
-                    ))
-                    .await?;
-                }
-
                 let playlist_info = spotify
                     .playlist(playlist_id, None, None) // Fields: Some("name, images, id")
                     .await
@@ -139,13 +122,20 @@ pub async fn play(ctx: Context<'_>, #[description = "Song"] song: String) -> Res
 
                 played_queue_msg(
                     &ctx,
-                    &mut reply_handle,
                     queued_tracks,
                     playlist_info.name.as_str(),
                     source_url.as_str(),
                     image_url,
                 )
                 .await?;
+
+                if ignored_tracks > 0 {
+                    ctx.send(create_information_warning(
+                        format!("Note: The bot does not currently support the playment of episodes. These have been ignored [{}]", ignored_tracks),
+                        true,
+                    ))
+                    .await?;
+                }
             }
             "album" => {
                 let mut queued_tracks = 0u32;
@@ -177,7 +167,6 @@ pub async fn play(ctx: Context<'_>, #[description = "Song"] song: String) -> Res
 
                 played_queue_msg(
                     &ctx,
-                    &mut reply_handle,
                     queued_tracks,
                     album_info.name.as_str(),
                     source_url.as_str(),
@@ -213,7 +202,6 @@ pub async fn play(ctx: Context<'_>, #[description = "Song"] song: String) -> Res
                 let source_url = format!("https://www.youtube.com/playlist?list={}", playlist_id);
                 played_queue_msg(
                     &ctx,
-                    &mut reply_handle,
                     song_ids.len() as u32,
                     "Youtube playlist",
                     source_url.as_str(),
@@ -231,7 +219,7 @@ pub async fn play(ctx: Context<'_>, #[description = "Song"] song: String) -> Res
                     song_id.to_string(),
                 );
                 info!("Searched");
-                single_song_queue(&ctx, src, &mut reply_handle).await?;
+                single_song_queue(&ctx, src).await?;
             }
         }
     // =-=-=-=-=-= Youtu.be short =-=-=-=-=-=
@@ -240,17 +228,17 @@ pub async fn play(ctx: Context<'_>, #[description = "Song"] song: String) -> Res
         dbg!(song_id);
         let src = YoutubeDl::new_ytdl_like("yt-dlp", data.http_client.clone(), song_id.to_string());
         dbg!(&src);
-        single_song_queue(&ctx, src, &mut reply_handle).await?;
+        single_song_queue(&ctx, src).await?;
     } else if Url::parse(song.as_str()).is_ok() {
         let src = YoutubeDl::new_ytdl_like("yt-dlp", data.http_client.clone(), song);
-        single_song_queue(&ctx, src, &mut reply_handle).await?;
+        single_song_queue(&ctx, src).await?;
     } else {
         let src = YoutubeDl::new_ytdl_like(
             "yt-dlp",
             data.http_client.clone(),
             format!("ytsearch:{}", song),
         );
-        single_song_queue(&ctx, src, &mut reply_handle).await?;
+        single_song_queue(&ctx, src).await?;
     }
     // ctx.say("O_o").await?;
     Ok(())
@@ -334,11 +322,7 @@ async fn enqueue_lazy(
     tokio::spawn(pull_metadata(track_handle, src)); // Pull metadata on another thread so we have the songs incase they are super short, also paralellism, lets hope it doesnt rate limit me.
 }
 
-async fn single_song_queue(
-    ctx: &Context<'_>,
-    mut src: YoutubeDl,
-    _message_handle: &mut ReplyHandle<'_>,
-) -> Result<(), Error> {
+async fn single_song_queue(ctx: &Context<'_>, mut src: YoutubeDl) -> Result<(), Error> {
     let call = helpers::join_author_vc(&ctx).await?;
     let mut handle = call.lock().await;
 
@@ -360,9 +344,10 @@ async fn single_song_queue(
     let mut typemap = track_handle.typemap().write().await;
     typemap.insert::<Requestor>(ctx.author().id);
     if let Ok(meta) = meta {
+        played_song_msg(&ctx, Some(&meta)).await?;
         typemap.insert::<AuxMetadataHolder>(meta);
     } else {
-        todo!();
+        played_song_msg(&ctx, None).await?;
     }
     Ok(())
 }
@@ -454,37 +439,87 @@ fn lookup_youtube_playlist<'a>(
 
 async fn played_queue_msg(
     ctx: &Context<'_>,
-    reply_handle: &mut ReplyHandle<'_>,
     song_count: u32,
     title: &str,
     source_url: &str,
     image_url: Option<&str>,
 ) -> Result<(), Error> {
-    dbg!(image_url);
-    reply_handle
-        .edit(
-            *ctx,
-            CreateReply::new().embed(|| -> CreateEmbed {
-                let mut e = CreateEmbed::new();
-                e = e
-                    .colour(INFO_EMBED_COLOUR)
-                    .author(CreateEmbedAuthor::new("Added to queue").icon_url(ICON_URL))
-                    .field("Added by", ctx.author().to_string(), true)
-                    .field("Amount of songs:", format!("`{song_count}`"), true)
-                    .url(source_url)
-                    .description(
-                        MessageBuilder::new()
-                            .push_named_link_safe(sanitise_text(title), source_url)
-                            .build(),
-                    );
+    // let mut thumbnail_attachment = CreateAttachment::url(ctx.discord(), image_url.unwrap()).await?;
+    // thumbnail_attachment.filename = "thumbnail.jpeg".to_string();
+    let reply = CreateReply::new().embed(|| -> CreateEmbed {
+        let mut e = CreateEmbed::new();
+        e = e
+            .colour(INFO_EMBED_COLOUR)
+            .author(CreateEmbedAuthor::new("Added to queue").icon_url(ICON_URL))
+            .field("Added by", ctx.author().to_string(), true)
+            .field("Amount of songs:", format!("`{song_count}`"), true)
+            .url(source_url)
+            .description(
+                MessageBuilder::new()
+                    .push_named_link_safe(sanitise_text(title), source_url)
+                    .build(),
+            )
+            .thumbnail("attachment://thumbnail.jpeg");
 
-                if let Some(url) = image_url {
-                    e = e.thumbnail(url);
-                };
+        if let Some(url) = image_url {
+            info!("hi");
+            // let url =
+            // "https://i.guim.co.uk/img/media/63de40b99577af9b867a9c57555a432632ba760b/0_266_5616_3370/master/5616.jpg?width=1200&height=1200&quality=85&auto=format&fit=crop&s=93458bbe24b9f88451ea08197888ab8e";
+            e = e.thumbnail(format!("{}", url));
+        };
 
-                e
-            }()),
-        )
-        .await?;
+        e
+    }());
+    // .attachment(thumbnail_attachment);
+
+    let _reply_handle = ctx.send(reply).await?;
+    // reply_handle.edit(*ctx, reply.clone()).await?;
+    Ok(())
+}
+
+async fn played_song_msg(ctx: &Context<'_>, meta: Option<&AuxMetadata>) -> Result<(), Error> {
+    let title = meta
+        .and_then(|a| (a.title.as_ref()).and_then(|s| Some(s.as_str())))
+        .unwrap_or("Unknown");
+
+    let duration = meta
+        .and_then(|a| {
+            a.duration
+                .and_then(|dur| Some(humantime::format_duration(dur).to_string()))
+        })
+        .unwrap_or("Unknown".to_string());
+
+    let source_url = meta.and_then(|a| a.source_url.as_deref());
+    let thumbnail = meta.and_then(|a| a.thumbnail.as_deref());
+
+    let reply = CreateReply::new().embed(|| -> CreateEmbed {
+        let mut e = CreateEmbed::new()
+            .colour(INFO_EMBED_COLOUR)
+            .author(CreateEmbedAuthor::new("Added to queue").icon_url(ICON_URL))
+            .field("Added by", ctx.author().to_string(), true)
+            .field("Duration", format!("`{}`", duration), true);
+
+        e = match source_url {
+            Some(url) => e.url(url).description(
+                MessageBuilder::new()
+                    .push_named_link(helpers::sanitise_text(title), url)
+                    .build(),
+            ),
+            None => e.description(
+                MessageBuilder::new()
+                    .push_safe(helpers::sanitise_text(title))
+                    .build(),
+            ),
+        };
+
+        if let Some(thumbnail) = thumbnail {
+            e = e.thumbnail(thumbnail);
+        }
+
+        e
+    }());
+
+    let _reply_handle = ctx.send(reply).await?;
+    // reply_handle.edit(*ctx, reply.clone()).await?;
     Ok(())
 }
