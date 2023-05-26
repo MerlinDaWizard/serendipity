@@ -4,7 +4,9 @@ use std::{
 };
 
 use crate::{
+    config::DisconnectOptions,
     errors::ParsimonyErrors,
+    events::idle_disconnect,
     helpers::{self, create_information_warning, sanitise_text, ICON_URL, INFO_EMBED_COLOUR},
     Context, Error, GuildState,
 };
@@ -116,9 +118,9 @@ pub async fn play(ctx: Context<'_>, #[description = "Song"] song: String) -> Res
                     "https://open.spotify.com/playlist/{}",
                     playlist_info.id.to_string()
                 );
-                dbg!(&playlist_info.images); // For some reason the image embed doesnt work with the `this is... [artist]` images. Not sure why.
+                // dbg!(&playlist_info.images); // For some reason the image embed doesnt work with the `this is... [artist]` images. Not sure why.
                 let image_url = playlist_info.images.last().map(|img| img.url.as_str());
-                dbg!(image_url);
+                // dbg!(image_url);
 
                 played_queue_msg(
                     &ctx,
@@ -211,23 +213,23 @@ pub async fn play(ctx: Context<'_>, #[description = "Song"] song: String) -> Res
             }
             // =-=-=-=-=-= No Playlist =-=-=-=-=-=
             None => {
-                info!("Searching..");
+                // info!("Searching..");
                 let song_id = song_id.unwrap().as_str();
                 let src = YoutubeDl::new_ytdl_like(
                     "yt-dlp",
                     data.http_client.clone(),
                     song_id.to_string(),
                 );
-                info!("Searched");
+                // info!("Searched");
                 single_song_queue(&ctx, src).await?;
             }
         }
     // =-=-=-=-=-= Youtu.be short =-=-=-=-=-=
     } else if let Some(captures) = REGEX_YOUTUBE_SHORT.captures(song.as_str()) {
         let song_id = captures.get(1).unwrap().as_str();
-        dbg!(song_id);
+        // dbg!(song_id);
         let src = YoutubeDl::new_ytdl_like("yt-dlp", data.http_client.clone(), song_id.to_string());
-        dbg!(&src);
+        // dbg!(&src);
         single_song_queue(&ctx, src).await?;
     } else if Url::parse(song.as_str()).is_ok() {
         let src = YoutubeDl::new_ytdl_like("yt-dlp", data.http_client.clone(), song);
@@ -362,42 +364,51 @@ pub struct MerlinEndTrack {
 #[async_trait]
 impl EventHandler for MerlinEndTrack {
     async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
-        if let Some(guild_data) = self.guild_data.get(&self.guild) {
-            if !guild_data.loop_queue {
-                return None;
-            }
+        let mut guild_data = self
+            .guild_data
+            .entry(self.guild)
+            .or_insert(GuildState::default());
 
+        let call_arc = self.call_lock.upgrade().unwrap();
+        let mut call = call_arc.lock().await;
+        if guild_data.loop_queue {
             if let EventContext::Track(&[(_, handle)]) = ctx {
-                if let Some(meta) = handle.typemap().read().await.get::<AuxMetadataHolder>() {
-                    if let Some(url) = &meta.source_url {
-                        let src = YoutubeDl::new_ytdl_like(
-                            "yt-dlp",
-                            self.http_client.clone(),
-                            url.to_string(),
-                        );
-                        info!("Replaying song");
-                        let call_arc = self.call_lock.upgrade().unwrap();
-                        let mut call = call_arc.lock().await;
+                let typemap = handle.typemap().read().await;
+                let meta = typemap.get::<AuxMetadataHolder>()?;
+                let url = meta.source_url.as_deref()?;
 
-                        let new_handle = call.enqueue_with_preload(src.clone().into(), None);
+                let src =
+                    YoutubeDl::new_ytdl_like("yt-dlp", self.http_client.clone(), url.to_string());
+                info!("Replaying song");
 
-                        let weak = Arc::downgrade(&call_arc);
-                        new_handle
-                            .add_event(
-                                songbird::Event::Track(TrackEvent::End),
-                                MerlinEndTrack {
-                                    call_lock: weak,
-                                    http_client: self.http_client.clone(),
-                                    guild: self.guild.clone(),
-                                    guild_data: self.guild_data.clone(),
-                                },
-                            )
-                            .unwrap();
+                let new_handle = call.enqueue_with_preload(src.clone().into(), None);
 
-                        tokio::spawn(pull_metadata(new_handle, src));
-                    }
-                }
+                let weak = Arc::downgrade(&call_arc);
+                new_handle
+                    .add_event(
+                        songbird::Event::Track(TrackEvent::End),
+                        MerlinEndTrack {
+                            call_lock: weak,
+                            http_client: self.http_client.clone(),
+                            guild: self.guild.clone(),
+                            guild_data: self.guild_data.clone(),
+                        },
+                    )
+                    .unwrap();
+
+                tokio::spawn(pull_metadata(new_handle, src));
             }
+        }
+
+        if call.queue().is_empty() {
+            idle_disconnect(
+                DisconnectOptions::Timeout(5),
+                self.guild.clone(),
+                &mut guild_data,
+                &mut call,
+            )
+            .await
+            .ok()?;
         }
 
         None

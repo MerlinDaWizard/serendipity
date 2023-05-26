@@ -1,14 +1,17 @@
 use std::{sync::Arc, time::Duration};
 
 use crate::{config::DisconnectOptions, Data, Error, GuildState, Timeouts};
-use dashmap::DashMap;
+use dashmap::{mapref::one::RefMut, DashMap};
 use poise::serenity_prelude::FullEvent;
 use serenity::{
     all::{ChannelId, GuildId},
     prelude::{CacheHttp, Context as SerenityContext},
 };
-use songbird::Songbird;
-use tokio::time::{Instant, MissedTickBehavior};
+use songbird::{Call, Songbird};
+use tokio::{
+    sync::MutexGuard,
+    time::{Instant, MissedTickBehavior},
+};
 
 pub async fn listener(
     //	ctx: &serenity::Context,
@@ -51,7 +54,6 @@ pub async fn listener(
                             lonely_disconnect(
                                 data.config.voice_settings.on_lonely,
                                 guild_id,
-                                ctx,
                                 framework.user_data().await.guild_states.clone(),
                                 sb.clone(),
                             )
@@ -75,7 +77,6 @@ pub async fn listener(
 pub async fn lonely_disconnect(
     action_type: DisconnectOptions,
     guild: GuildId,
-    _ctx: &poise::serenity_prelude::Context,
     timeouts: Arc<DashMap<GuildId, GuildState>>,
     sb: Arc<Songbird>,
 ) -> Result<(), Error> {
@@ -113,30 +114,25 @@ pub async fn lonely_disconnect(
     Ok(())
 }
 
-// pub async fn timeout(
-//     seconds: usize,
-//     guild: GuildId,
-//     cache_http: impl CacheHttp,
-//     data: Arc<RwLock<TypeMap>>,
-// ) {
-//     info!("Started timeout [{}s]", seconds);
-//     tokio::time::sleep(Duration::from_secs(seconds as u64)).await;
-//     info!("Left call in {} due to lonely timeout.", guild.0);
-//     let data = data.read().await;
-
-//     let sb = data.get::<SongbirdKey>().cloned().unwrap();
-//     let call_mutex = sb.get(guild).unwrap();
-//     let mut call = call_mutex.lock().await;
-
-//     let vc = call.current_channel().unwrap();
-
-//     let voice_goers = get_voice_goers(cache_http, vc.0.into()).await;
-//     if voice_goers > 0 {
-//         info!("Ignoring timeout, no longer lonely.");
-//     } else {
-//         call.leave().await.unwrap();
-//     }
-// }
+pub async fn idle_disconnect(
+    action_type: DisconnectOptions,
+    guild: GuildId,
+    timeouts: &mut RefMut<'_, GuildId, GuildState>,
+    call: &mut MutexGuard<'_, Call>,
+) -> Result<(), Error> {
+    match action_type {
+        DisconnectOptions::Timeout(s) => {
+            debug!("Setting idle timer. [{}]", guild.0);
+            timeouts.timeouts.idle_leavetime = Some(Instant::now() + Duration::from_secs(s as u64));
+        }
+        DisconnectOptions::Instant => {
+            info!("Left call in {} due to idle.", guild.0);
+            call.leave().await?
+        }
+        DisconnectOptions::Off => (),
+    };
+    Ok(())
+}
 
 pub async fn get_voice_goers(cache_http: impl CacheHttp, channel: ChannelId) -> usize {
     let voice_goers = cache_http
@@ -157,14 +153,11 @@ pub async fn get_voice_goers(cache_http: impl CacheHttp, channel: ChannelId) -> 
 async fn timeout_checker(ctx: SerenityContext, guild_state: Arc<DashMap<GuildId, GuildState>>) {
     let mut interval = tokio::time::interval(Duration::from_millis(500));
     interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
-
     loop {
         interval.tick().await;
         trace!("Dc tick");
-
         for mut multi_ref in guild_state.iter_mut() {
             let (guild, guild_state) = multi_ref.pair_mut();
-
             compare_time(&ctx, guild, &mut guild_state.timeouts.idle_leavetime).await;
             compare_time(&ctx, guild, &mut guild_state.timeouts.lonely_leavetime).await;
         }
